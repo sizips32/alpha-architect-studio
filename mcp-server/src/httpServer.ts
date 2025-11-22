@@ -3,15 +3,16 @@
 import http from 'http';
 import { parse } from 'url';
 import { z } from 'zod';
-import { generateAlphaExpression } from './services/geminiService.js';
+import { generateAlphaExpression, validateApiKey } from './services/geminiService.js';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8787;
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS || '*';
 
 function sendJson(res: http.ServerResponse, status: number, data: unknown) {
     const body = JSON.stringify(data);
     res.writeHead(status, {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': ALLOWED_ORIGINS,
         'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
     });
@@ -20,7 +21,7 @@ function sendJson(res: http.ServerResponse, status: number, data: unknown) {
 
 function handleOptions(res: http.ServerResponse) {
     res.writeHead(204, {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': ALLOWED_ORIGINS,
         'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
     });
@@ -126,8 +127,19 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 404, { error: 'Not Found' });
 });
 
+// Validate environment variables before starting server
+try {
+    validateApiKey();
+    console.error('Environment validation passed');
+} catch (error) {
+    console.error('FATAL: Environment validation failed');
+    console.error(error instanceof Error ? error.message : 'Unknown error');
+    process.exit(1);
+}
+
 server.listen(PORT, () => {
     console.error(`Alpha Architect HTTP bridge listening on http://localhost:${PORT}`);
+    console.error(`CORS allowed origins: ${ALLOWED_ORIGINS}`);
 });
 
 

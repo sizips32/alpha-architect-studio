@@ -57,7 +57,7 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
             <ul className="list-disc list-inside space-y-1 text-gray-300">
               <li><span className="text-gray-200 font-medium">설정</span>: 유니버스, 제약, 목표 등을 구성합니다.</li>
               <li><span className="text-gray-200 font-medium">알파 정의</span>: 수식을 직접 입력하거나 AI로 생성합니다.</li>
-              <li><span className="text-gray-2 00 font-medium">실행</span>: 시뮬레이션을 실행하고 KPI/차트를 확인합니다.</li>
+              <li><span className="text-gray-200 font-medium">실행</span>: 시뮬레이션을 실행하고 KPI/차트를 확인합니다.</li>
               <li><span className="text-gray-200 font-medium">개선</span>: 성능/안정성을 기준으로 수식을 반복 개선합니다.</li>
             </ul>
           </div>

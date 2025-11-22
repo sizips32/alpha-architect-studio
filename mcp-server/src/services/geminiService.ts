@@ -1,14 +1,21 @@
 import { GoogleGenAI } from "@google/genai";
 import type { AlphaExpression } from '../types.js';
 
+/**
+ * Validates that required API key is set
+ * Should be called during server initialization
+ */
+export function validateApiKey(): void {
+    if (!process.env.GEMINI_API_KEY && !process.env.API_KEY) {
+        throw new Error("GEMINI_API_KEY or API_KEY environment variable is required");
+    }
+}
+
 // Initialize the GoogleGenAI client
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY });
 const model = 'gemini-2.5-flash';
 
 export const generateAlphaExpression = async (idea: string): Promise<AlphaExpression> => {
-    if (!process.env.GEMINI_API_KEY && !process.env.API_KEY) {
-        throw new Error("GEMINI_API_KEY or API_KEY environment variable is required");
-    }
 
     const prompt = `
     You are an expert quantitative analyst. Your task is to convert a user's trading idea into a mathematical alpha expression.
@@ -64,10 +71,6 @@ export const generateAlphaExpression = async (idea: string): Promise<AlphaExpres
 };
 
 export const explainAlphaExpression = async (expression: string): Promise<string> => {
-    if (!process.env.GEMINI_API_KEY && !process.env.API_KEY) {
-        throw new Error("GEMINI_API_KEY or API_KEY environment variable is required");
-    }
-
     const prompt = `
     You are an expert quantitative analyst. Explain the following alpha expression in simple terms:
     

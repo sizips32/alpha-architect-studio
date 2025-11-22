@@ -4,7 +4,8 @@ import { AppError, ErrorCodes, handleServiceError } from '../utils/errorHandler'
 
 // NOTE: This uses a public proxy to get around CORS issues with the Yahoo Finance API.
 // In a production environment, you would want to have your own backend service for this.
-const PROXY_URL = 'https://cors-anywhere.herokuapp.com/';
+// The proxy URL can be configured via VITE_PROXY_URL environment variable.
+const PROXY_URL = import.meta.env.VITE_PROXY_URL || 'https://cors-anywhere.herokuapp.com/';
 const PROXY_ACTIVATION_URL = 'https://cors-anywhere.herokuapp.com/corsdemo';
 const API_BASE_URL = 'https://query1.finance.yahoo.com/v8/finance/chart/';
 

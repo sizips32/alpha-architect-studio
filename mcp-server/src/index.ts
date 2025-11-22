@@ -8,7 +8,7 @@ import {
     Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { generateAlphaExpression, explainAlphaExpression } from './services/geminiService.js';
+import { generateAlphaExpression, explainAlphaExpression, validateApiKey } from './services/geminiService.js';
 import { fetchHistoricalData, searchTickers, CorsActivationError } from './services/yahooFinanceService.js';
 import { ConfigSchema, type Config, type HistoricalData, type BacktestResults } from './types.js';
 
@@ -321,6 +321,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start the server
 async function main() {
+    // Validate environment variables at startup
+    try {
+        validateApiKey();
+    } catch (error) {
+        console.error('FATAL: Environment validation failed');
+        console.error(error instanceof Error ? error.message : 'Unknown error');
+        process.exit(1);
+    }
+
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error('Alpha Architect MCP Server running on stdio');

@@ -8,7 +8,7 @@ import { logger } from '../utils/logger';
  * @returns Promise resolving to a mathematical alpha expression
  * @throws {AppError} If the API call fails
  */
-const DEFAULT_API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8787';
+const DEFAULT_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
 export const generateAlphaExpression = async (idea: string): Promise<string> => {
   if (!idea.trim()) {

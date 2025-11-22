@@ -53,7 +53,7 @@ export const fetchHistoricalData = async (ticker: string): Promise<HistoricalDat
             low: low[i],
             close: close[i],
             volume: volume[i],
-        })).filter((dp: any) =>
+        })).filter((dp: HistoricalData) =>
             dp.open != null && dp.high != null && dp.low != null && dp.close != null && dp.volume != null
         );
 
