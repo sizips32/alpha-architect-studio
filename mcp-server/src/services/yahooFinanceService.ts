@@ -1,10 +1,11 @@
 import type { HistoricalData } from '../types.js';
+import { YAHOO_FINANCE, COMMON_TICKERS } from '../../../shared/constants.js';
 
 // NOTE: This uses a public proxy to get around CORS issues with the Yahoo Finance API.
 // In a production environment, you would want to have your own backend service for this.
 const PROXY_URL = 'https://cors-anywhere.herokuapp.com/';
-const PROXY_ACTIVATION_URL = 'https://cors-anywhere.herokuapp.com/corsdemo';
-const API_BASE_URL = 'https://query1.finance.yahoo.com/v8/finance/chart/';
+const PROXY_ACTIVATION_URL = YAHOO_FINANCE.PROXY_ACTIVATION_URL;
+const API_BASE_URL = YAHOO_FINANCE.API_BASE_URL;
 
 export class CorsActivationError extends Error {
     constructor(message: string, public activationUrl: string) {
@@ -14,7 +15,7 @@ export class CorsActivationError extends Error {
 }
 
 export const fetchHistoricalData = async (ticker: string): Promise<HistoricalData[]> => {
-    const url = `${PROXY_URL}${API_BASE_URL}${ticker}?range=5y&interval=1d`;
+    const url = `${PROXY_URL}${API_BASE_URL}${ticker}?range=${YAHOO_FINANCE.DEFAULT_RANGE}&interval=${YAHOO_FINANCE.DEFAULT_INTERVAL}`;
 
     try {
         const response = await fetch(url);
@@ -74,21 +75,8 @@ export const fetchHistoricalData = async (ticker: string): Promise<HistoricalDat
 
 export const searchTickers = async (query: string): Promise<Array<{ symbol: string, name: string, exchange: string }>> => {
     // This is a simplified implementation. In production, you'd want to use a proper search API
-    const commonTickers = [
-        { symbol: 'AAPL', name: 'Apple Inc.', exchange: 'NASDAQ' },
-        { symbol: 'MSFT', name: 'Microsoft Corporation', exchange: 'NASDAQ' },
-        { symbol: 'GOOGL', name: 'Alphabet Inc.', exchange: 'NASDAQ' },
-        { symbol: 'AMZN', name: 'Amazon.com Inc.', exchange: 'NASDAQ' },
-        { symbol: 'TSLA', name: 'Tesla Inc.', exchange: 'NASDAQ' },
-        { symbol: 'META', name: 'Meta Platforms Inc.', exchange: 'NASDAQ' },
-        { symbol: 'NVDA', name: 'NVIDIA Corporation', exchange: 'NASDAQ' },
-        { symbol: 'NFLX', name: 'Netflix Inc.', exchange: 'NASDAQ' },
-        { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', exchange: 'NYSE' },
-        { symbol: 'QQQ', name: 'Invesco QQQ Trust', exchange: 'NASDAQ' },
-    ];
-
     const queryLower = query.toLowerCase();
-    return commonTickers.filter(ticker =>
+    return COMMON_TICKERS.filter(ticker =>
         ticker.symbol.toLowerCase().includes(queryLower) ||
         ticker.name.toLowerCase().includes(queryLower)
     );

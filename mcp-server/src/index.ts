@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { generateAlphaExpression, explainAlphaExpression, validateApiKey } from './services/geminiService.js';
 import { fetchHistoricalData, searchTickers, CorsActivationError } from './services/yahooFinanceService.js';
 import { ConfigSchema, type Config, type HistoricalData, type BacktestResults } from './types.js';
+import { VALID_ALPHA_FUNCTIONS, VALID_ALPHA_FIELDS } from '../../shared/constants.js';
 
 // Define the tools available through MCP
 const tools: Tool[] = [
@@ -231,11 +232,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const { expression } = z.object({ expression: z.string() }).parse(args);
 
                 // Basic validation - check for common alpha expression patterns
-                const validFunctions = ['rank', 'delay', 'correlation', 'delta', 'Ts_rank', 'sma', 'stddev'];
-                const validFields = ['open', 'high', 'low', 'close', 'volume', 'returns', 'cap', 'revenue', 'ebitda', 'debt'];
-
-                const hasValidFunction = validFunctions.some(func => expression.includes(func));
-                const hasValidField = validFields.some(field => expression.includes(field));
+                const hasValidFunction = VALID_ALPHA_FUNCTIONS.some(func => expression.includes(func));
+                const hasValidField = VALID_ALPHA_FIELDS.some(field => expression.includes(field));
 
                 const isValid = hasValidFunction && hasValidField && expression.trim().length > 0;
 
@@ -243,7 +241,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     content: [
                         {
                             type: 'text',
-                            text: `Validation result for "${expression}":\n\n${isValid ? '✅ Valid' : '❌ Invalid'}\n\nValid functions: ${validFunctions.join(', ')}\nValid fields: ${validFields.join(', ')}`,
+                            text: `Validation result for "${expression}":\n\n${isValid ? '✅ Valid' : '❌ Invalid'}\n\nValid functions: ${VALID_ALPHA_FUNCTIONS.join(', ')}\nValid fields: ${VALID_ALPHA_FIELDS.join(', ')}`,
                         },
                     ],
                 };

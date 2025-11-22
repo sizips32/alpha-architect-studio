@@ -1,49 +1,22 @@
 /**
- * Common type definitions shared between frontend and backend.
- * These types should match the MCP server types for consistency.
+ * Re-export shared types for backward compatibility.
+ * All type definitions are now maintained in the shared directory.
  */
 
-export interface Config {
-  universe: string;
-  delay: number;
-  lookbackDays: number;
-  maxStockWeight: number;
-  decay: number;
-  neutralization: string;
-  idea: string;
-  region: string;
-  performanceGoal: string;
-}
+export type {
+  Config,
+  HistoricalData,
+  PnlDataPoint,
+  Kpis,
+  BacktestResults,
+  AlphaExpression,
+} from './shared/types';
 
-export interface PnlDataPoint {
-  day: number;
-  value: number;
-}
-
-export interface Kpis {
-  ir: number;
-  annualReturn: number;
-  maxDrawdown: number;
-  turnover: number;
-  margin: number;
-  correlation: number;
-}
-
-export interface BacktestResults {
-  kpis: Kpis;
-  pnlData: PnlDataPoint[];
-}
-
-export interface HistoricalData {
-  date: Date;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
-
-/**
- * Alpha expression type - a string representing a mathematical expression
- */
-export type AlphaExpression = string;
+export {
+  ConfigSchema,
+  HistoricalDataSchema,
+  PnlDataPointSchema,
+  KpisSchema,
+  BacktestResultsSchema,
+  AlphaExpressionSchema,
+} from './shared/types';

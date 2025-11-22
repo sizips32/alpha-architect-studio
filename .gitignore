@@ -20,6 +20,12 @@ dist-ssr
 .env.production
 .env.test
 
+# Build artifacts in shared directory
+shared/**/*.js
+shared/**/*.js.map
+shared/**/*.d.ts
+shared/**/*.d.ts.map
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
