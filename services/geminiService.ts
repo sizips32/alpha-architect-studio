@@ -12,11 +12,7 @@ const DEFAULT_API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localh
 
 export const generateAlphaExpression = async (idea: string): Promise<string> => {
   if (!idea.trim()) {
-    throw new AppError(
-      "AI prompt cannot be empty.",
-      ErrorCodes.EMPTY_INPUT,
-      400
-    );
+    throw new AppError('AI prompt cannot be empty.', ErrorCodes.EMPTY_INPUT, 400);
   }
 
   try {
@@ -39,17 +35,19 @@ export const generateAlphaExpression = async (idea: string): Promise<string> => 
     const data = await response.json();
     if (!data.expression) {
       logger.error('Invalid response from server', undefined, { response: data });
-      throw new AppError(
-        'Invalid response from server',
-        ErrorCodes.API_REQUEST_FAILED,
-        500
-      );
+      throw new AppError('Invalid response from server', ErrorCodes.API_REQUEST_FAILED, 500);
     }
-    
-    logger.info('Alpha expression generated successfully', { expressionLength: data.expression.length });
+
+    logger.info('Alpha expression generated successfully', {
+      expressionLength: data.expression.length,
+    });
     return data.expression;
   } catch (error) {
-    logger.error('Failed to generate alpha expression', error instanceof Error ? error : undefined, { ideaLength: idea.length });
+    logger.error(
+      'Failed to generate alpha expression',
+      error instanceof Error ? error : undefined,
+      { ideaLength: idea.length }
+    );
     throw handleServiceError(error);
   }
 };

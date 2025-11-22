@@ -24,7 +24,7 @@ describe('geminiService', () => {
       });
 
       const result = await generateAlphaExpression('momentum strategy');
-      
+
       expect(result).toBe(mockExpression);
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/generate_alpha_expression'),
@@ -61,4 +61,3 @@ describe('geminiService', () => {
     });
   });
 });
-

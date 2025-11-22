@@ -29,25 +29,25 @@ export const ErrorCodes = {
   API_KEY_MISSING: 'API_KEY_MISSING',
   API_REQUEST_FAILED: 'API_REQUEST_FAILED',
   API_RATE_LIMIT: 'API_RATE_LIMIT',
-  
+
   // Validation Errors
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   INVALID_INPUT: 'INVALID_INPUT',
   EMPTY_INPUT: 'EMPTY_INPUT',
-  
+
   // Network Errors
   NETWORK_ERROR: 'NETWORK_ERROR',
   CORS_ERROR: 'CORS_ERROR',
   TIMEOUT_ERROR: 'TIMEOUT_ERROR',
-  
+
   // Data Errors
   DATA_NOT_FOUND: 'DATA_NOT_FOUND',
   INVALID_TICKER: 'INVALID_TICKER',
-  
+
   // Backtest Errors
   BACKTEST_FAILED: 'BACKTEST_FAILED',
   INVALID_EXPRESSION: 'INVALID_EXPRESSION',
-  
+
   // Unknown Errors
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
 } as const;
@@ -61,47 +61,27 @@ export const handleServiceError = (error: unknown): AppError => {
   if (error instanceof AppError) {
     return error;
   }
-  
+
   if (error instanceof Error) {
     // Check for common error patterns
     if (error.message.includes('API key') || error.message.includes('API_KEY')) {
-      return new AppError(
-        'API key is missing or invalid',
-        ErrorCodes.API_KEY_MISSING,
-        401
-      );
+      return new AppError('API key is missing or invalid', ErrorCodes.API_KEY_MISSING, 401);
     }
-    
+
     if (error.message.includes('network') || error.message.includes('fetch')) {
-      return new AppError(
-        error.message,
-        ErrorCodes.NETWORK_ERROR,
-        503
-      );
+      return new AppError(error.message, ErrorCodes.NETWORK_ERROR, 503);
     }
-    
+
     if (error.message.includes('timeout')) {
-      return new AppError(
-        'Request timed out',
-        ErrorCodes.TIMEOUT_ERROR,
-        504
-      );
+      return new AppError('Request timed out', ErrorCodes.TIMEOUT_ERROR, 504);
     }
-    
+
     // Default error wrapping
-    return new AppError(
-      error.message,
-      ErrorCodes.UNKNOWN_ERROR,
-      500
-    );
+    return new AppError(error.message, ErrorCodes.UNKNOWN_ERROR, 500);
   }
-  
+
   // Unknown error type
-  return new AppError(
-    'An unexpected error occurred',
-    ErrorCodes.UNKNOWN_ERROR,
-    500
-  );
+  return new AppError('An unexpected error occurred', ErrorCodes.UNKNOWN_ERROR, 500);
 };
 
 /**
@@ -128,11 +108,10 @@ export const getUserFriendlyMessage = (error: unknown): string => {
         return error.message;
     }
   }
-  
+
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   return '알 수 없는 오류가 발생했습니다.';
 };
-

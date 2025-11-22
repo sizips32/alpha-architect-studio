@@ -19,14 +19,19 @@ interface KpiCardProps {
  * KPI card component for displaying a single key performance indicator
  * Shows title, value, and an info tooltip
  * Memoized to prevent unnecessary re-renders
- * 
+ *
  * @param title - KPI title
  * @param value - KPI value to display
  * @param tooltip - Tooltip explanation
  * @param isPositive - Color coding (true = green, false = red, undefined = neutral)
  */
 export const KpiCard: React.FC<KpiCardProps> = memo(({ title, value, tooltip, isPositive }) => {
-  const valueColor = isPositive === true ? 'text-green-400' : isPositive === false ? 'text-red-400' : 'text-gray-100';
+  const valueColor =
+    isPositive === true
+      ? 'text-green-400'
+      : isPositive === false
+        ? 'text-red-400'
+        : 'text-gray-100';
 
   return (
     <div className="bg-gray-900 p-4 rounded-lg border border-gray-800">

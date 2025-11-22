@@ -36,11 +36,13 @@ cp env.example .env
 ## 🔑 2단계: API 키 설정
 
 ### Gemini API 키 발급
+
 1. [Google AI Studio](https://aistudio.google.com/) 접속
 2. "Get API Key" 클릭
 3. 새 API 키 생성 또는 기존 키 사용
 
 ### 환경 변수 설정
+
 `.env` 파일을 편집하여 API 키를 추가하세요:
 
 ```bash
@@ -49,6 +51,7 @@ nano .env
 ```
 
 다음 내용을 추가:
+
 ```
 GEMINI_API_KEY=your_actual_api_key_here
 ```
@@ -56,6 +59,7 @@ GEMINI_API_KEY=your_actual_api_key_here
 ## ⚙️ 3단계: Claude Desktop 설정
 
 ### 설정 파일 위치
+
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
 
@@ -142,6 +146,7 @@ Error: GEMINI_API_KEY or API_KEY environment variable is required
 ```
 
 이 오류가 발생하면:
+
 1. `.env` 파일에 올바른 API 키가 설정되어 있는지 확인
 2. Claude Desktop 설정 파일의 `env` 섹션에 API 키가 올바르게 설정되어 있는지 확인
 
@@ -158,21 +163,25 @@ Yahoo Finance API 사용 시 CORS 오류가 발생할 수 있습니다:
 설치가 완료되면 다음 명령어들로 각 기능을 테스트할 수 있습니다:
 
 ### Alpha 표현식 생성
+
 ```
 "모멘텀 전략으로 지난 한 달간 수익률이 높은 주식을 사는 아이디어를 alpha 표현식으로 만들어줘"
 ```
 
 ### Alpha 표현식 설명
+
 ```
 "Ts_rank(close, 10) - Ts_rank(volume, 10) 이 표현식이 무엇을 하는지 설명해줘"
 ```
 
 ### 주식 데이터 조회
+
 ```
 "AAPL 주식의 최근 데이터를 가져와줘"
 ```
 
 ### 백테스트 시뮬레이션
+
 ```
 "rank(returns, 20) 표현식으로 백테스트를 실행해줘"
 ```
@@ -180,6 +189,7 @@ Yahoo Finance API 사용 시 CORS 오류가 발생할 수 있습니다:
 ## 📞 지원
 
 문제가 지속되면:
+
 1. [MCP 서버 문서](mcp-server/README.md) 확인
 2. GitHub Issues에 문제 보고
 3. 로그 파일 확인 (Claude Desktop 로그)

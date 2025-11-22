@@ -12,13 +12,12 @@ const DEFAULT_URL = `${DEFAULT_API_URL}/simulate_backtest`;
  * @returns Promise resolving to backtest results
  * @throws {AppError} If the backtest fails
  */
-export async function simulateBacktest(expression: string, config?: Partial<Config>): Promise<BacktestResults> {
+export async function simulateBacktest(
+  expression: string,
+  config?: Partial<Config>
+): Promise<BacktestResults> {
   if (!expression.trim()) {
-    throw new AppError(
-      'Expression cannot be empty.',
-      ErrorCodes.EMPTY_INPUT,
-      400
-    );
+    throw new AppError('Expression cannot be empty.', ErrorCodes.EMPTY_INPUT, 400);
   }
 
   try {
@@ -28,7 +27,7 @@ export async function simulateBacktest(expression: string, config?: Partial<Conf
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ expression, config }),
     });
-    
+
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ error: res.statusText }));
       throw new AppError(
@@ -37,28 +36,24 @@ export async function simulateBacktest(expression: string, config?: Partial<Conf
         res.status
       );
     }
-    
+
     const data = await res.json();
-    
+
     // Validate response structure
     if (!data.kpis || !data.pnlData) {
-      throw new AppError(
-        'Invalid backtest response format',
-        ErrorCodes.BACKTEST_FAILED,
-        500
-      );
+      throw new AppError('Invalid backtest response format', ErrorCodes.BACKTEST_FAILED, 500);
     }
-    
-    logger.info('Backtest simulation completed', { 
+
+    logger.info('Backtest simulation completed', {
       ir: data.kpis.ir,
       annualReturn: data.kpis.annualReturn,
-      dataPoints: data.pnlData.length 
+      dataPoints: data.pnlData.length,
     });
     return data as BacktestResults;
   } catch (error) {
-    logger.error('Backtest simulation failed', error instanceof Error ? error : undefined, { expression });
+    logger.error('Backtest simulation failed', error instanceof Error ? error : undefined, {
+      expression,
+    });
     throw handleServiceError(error);
   }
 }
-
-

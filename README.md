@@ -18,17 +18,20 @@ AI 기반 퀀트 전략 개발 스튜디오입니다. 자연어로 된 트레이
 **사전 요구사항:** Node.js
 
 1. 의존성 설치:
+
    ```bash
    npm install
    ```
 
 2. Gemini API 키 설정:
+
    ```bash
    # .env.local 파일 생성 후 GEMINI_API_KEY 설정
    echo "GEMINI_API_KEY=your_api_key_here" > .env.local
    ```
 
 3. 개발 서버 실행:
+
    ```bash
    npm run dev
    ```
@@ -42,12 +45,14 @@ Claude Desktop에서 직접 alpha-architect-studio의 기능을 사용할 수 �
 ### 설치 방법
 
 1. MCP 서버 설치:
+
    ```bash
    cd mcp-server
    ./install.sh
    ```
 
 2. Claude Desktop 설정 파일에 추가:
+
    ```json
    {
      "mcpServers": {
@@ -69,9 +74,11 @@ Claude Desktop에서 직접 alpha-architect-studio의 기능을 사용할 수 �
 ## 🎯 사용 예시
 
 ### 웹 앱에서
+
 - "모멘텀 전략으로 지난 한 달간 수익률이 높은 주식을 사는 아이디어"를 입력하면 AI가 `rank(returns, 20)` 같은 alpha 표현식을 생성합니다.
 
 ### Claude Desktop에서
+
 - "AAPL 주식 데이터를 가져와줘"
 - "Ts_rank(close, 10) - Ts_rank(volume, 10) 이 표현식을 설명해줘"
 - "rank(returns, 20) 전략으로 백테스트를 실행해줘"
@@ -79,12 +86,14 @@ Claude Desktop에서 직접 alpha-architect-studio의 기능을 사용할 수 �
 ## 📊 Alpha 표현식 문법
 
 ### 데이터 필드
+
 - `open`, `high`, `low`, `close`: OHLC 가격
 - `volume`: 거래량
 - `returns`: 일일 수익률
 - `cap`: 시가총액
 
 ### 함수
+
 - `rank(x)`: 횡단면 순위
 - `delay(x, d)`: d일 전 값
 - `Ts_rank(x, d)`: d일간 시계열 순위

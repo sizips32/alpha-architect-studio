@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI } from '@google/genai';
 import type { AlphaExpression } from '../types.js';
 
 // Initialize the GoogleGenAI client
@@ -6,11 +6,11 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.A
 const model = 'gemini-2.5-flash';
 
 export const generateAlphaExpression = async (idea: string): Promise<AlphaExpression> => {
-    if (!process.env.GEMINI_API_KEY && !process.env.API_KEY) {
-        throw new Error("GEMINI_API_KEY or API_KEY environment variable is required");
-    }
+  if (!process.env.GEMINI_API_KEY && !process.env.API_KEY) {
+    throw new Error('GEMINI_API_KEY or API_KEY environment variable is required');
+  }
 
-    const prompt = `
+  const prompt = `
     You are an expert quantitative analyst. Your task is to convert a user's trading idea into a mathematical alpha expression.
     The expression should use a specific syntax with the available functions and data fields.
 
@@ -45,30 +45,30 @@ export const generateAlphaExpression = async (idea: string): Promise<AlphaExpres
     User Idea: "${idea}"
   `;
 
-    try {
-        const response = await ai.models.generateContent({
-            model: model,
-            contents: prompt,
-        });
+  try {
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: prompt,
+    });
 
-        // Clean up the response, removing potential markdown or extra text
-        const text = response.text?.trim() || '';
-        if (text.startsWith('`') && text.endsWith('`')) {
-            return text.substring(1, text.length - 1);
-        }
-        return text;
-    } catch (error) {
-        console.error("Error calling Gemini API:", error);
-        throw new Error("Failed to communicate with the generative model.");
+    // Clean up the response, removing potential markdown or extra text
+    const text = response.text?.trim() || '';
+    if (text.startsWith('`') && text.endsWith('`')) {
+      return text.substring(1, text.length - 1);
     }
+    return text;
+  } catch (error) {
+    console.error('Error calling Gemini API:', error);
+    throw new Error('Failed to communicate with the generative model.');
+  }
 };
 
 export const explainAlphaExpression = async (expression: string): Promise<string> => {
-    if (!process.env.GEMINI_API_KEY && !process.env.API_KEY) {
-        throw new Error("GEMINI_API_KEY or API_KEY environment variable is required");
-    }
+  if (!process.env.GEMINI_API_KEY && !process.env.API_KEY) {
+    throw new Error('GEMINI_API_KEY or API_KEY environment variable is required');
+  }
 
-    const prompt = `
+  const prompt = `
     You are an expert quantitative analyst. Explain the following alpha expression in simple terms:
     
     Expression: "${expression}"
@@ -82,15 +82,15 @@ export const explainAlphaExpression = async (expression: string): Promise<string
     Keep the explanation clear and accessible to both quantitative and non-quantitative audiences.
   `;
 
-    try {
-        const response = await ai.models.generateContent({
-            model: model,
-            contents: prompt,
-        });
+  try {
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: prompt,
+    });
 
-        return response.text?.trim() || '';
-    } catch (error) {
-        console.error("Error calling Gemini API:", error);
-        throw new Error("Failed to explain the alpha expression.");
-    }
+    return response.text?.trim() || '';
+  } catch (error) {
+    console.error('Error calling Gemini API:', error);
+    throw new Error('Failed to explain the alpha expression.');
+  }
 };

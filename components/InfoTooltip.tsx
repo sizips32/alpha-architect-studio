@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 interface InfoTooltipProps {
@@ -9,7 +8,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({ text }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   return (
-    <div 
+    <div
       className="relative flex items-center ml-2"
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}

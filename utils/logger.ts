@@ -38,7 +38,12 @@ class Logger {
     return `[${entry.timestamp}] [${levelName}] ${entry.message}${contextStr}${errorStr}`;
   }
 
-  private log(level: LogLevel, message: string, context?: Record<string, unknown>, error?: Error): void {
+  private log(
+    level: LogLevel,
+    message: string,
+    context?: Record<string, unknown>,
+    error?: Error
+  ): void {
     if (!this.shouldLog(level)) {
       return;
     }
@@ -106,4 +111,3 @@ class Logger {
 
 // Export a singleton instance
 export const logger = new Logger();
-

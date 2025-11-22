@@ -34,16 +34,30 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
  * @param onChange - Callback when the value changes
  * @param options - Array of option objects with value and label
  */
-const LabeledSelect: React.FC<{ label: string; tooltip: string; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: {value: string; label: string}[] }> = ({ label, tooltip, value, onChange, options }) => (
-    <div>
-        <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
-            {label}
-            <InfoTooltip text={tooltip} />
-        </label>
-        <select value={value} onChange={onChange} className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
-            {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-        </select>
-    </div>
+const LabeledSelect: React.FC<{
+  label: string;
+  tooltip: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: { value: string; label: string }[];
+}> = ({ label, tooltip, value, onChange, options }) => (
+  <div>
+    <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
+      {label}
+      <InfoTooltip text={tooltip} />
+    </label>
+    <select
+      value={value}
+      onChange={onChange}
+      className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  </div>
 );
 
 /**
@@ -52,13 +66,13 @@ const LabeledSelect: React.FC<{ label: string; tooltip: string; value: string; o
  * - Triple-Axis Plan (TAP): Idea, Region, Performance Goal
  * - Alpha Parameters: Universe, Delay, Lookback, Max Stock Weight, Decay
  * - Risk & Neutralization: Neutralization method
- * 
+ *
  * @param config - Current configuration object
  * @param setConfig - Function to update the configuration
  */
 export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, setConfig }) => {
-  const handleChange = <K extends keyof Config,>(key: K, value: Config[K]) => {
-    setConfig(prev => ({ ...prev, [key]: value }));
+  const handleChange = <K extends keyof Config>(key: K, value: Config[K]) => {
+    setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -67,59 +81,59 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, setConfig }) =
         <h2 className="text-lg font-bold text-gray-100">Configuration</h2>
         <p className="text-sm text-gray-400">Adjust parameters to refine your alpha.</p>
       </div>
-      
+
       <Section title="Triple-Axis Plan (TAP)">
-        <LabeledSelect 
-            label="Idea & Dataset" 
-            tooltip="The core concept and data used for the alpha."
-            value={config.idea}
-            onChange={(e) => handleChange('idea', e.target.value)}
-            options={[
-                { value: 'Reversion', label: 'Reversion' },
-                { value: 'Momentum', label: 'Momentum' },
-                { value: 'Seasonality', label: 'Seasonality' },
-                { value: 'Value', label: 'Value' },
-                { value: 'ML_Signal', label: 'Machine Learning' },
-            ]}
+        <LabeledSelect
+          label="Idea & Dataset"
+          tooltip="The core concept and data used for the alpha."
+          value={config.idea}
+          onChange={(e) => handleChange('idea', e.target.value)}
+          options={[
+            { value: 'Reversion', label: 'Reversion' },
+            { value: 'Momentum', label: 'Momentum' },
+            { value: 'Seasonality', label: 'Seasonality' },
+            { value: 'Value', label: 'Value' },
+            { value: 'ML_Signal', label: 'Machine Learning' },
+          ]}
         />
-        <LabeledSelect 
-            label="Region & Universe" 
-            tooltip="Geographic market and asset pool for the alpha."
-            value={config.region}
-            onChange={(e) => handleChange('region', e.target.value)}
-            options={[
-                { value: 'US', label: 'United States' },
-                { value: 'EU', label: 'Europe' },
-                { value: 'ASIA', label: 'Asia' },
-            ]}
+        <LabeledSelect
+          label="Region & Universe"
+          tooltip="Geographic market and asset pool for the alpha."
+          value={config.region}
+          onChange={(e) => handleChange('region', e.target.value)}
+          options={[
+            { value: 'US', label: 'United States' },
+            { value: 'EU', label: 'Europe' },
+            { value: 'ASIA', label: 'Asia' },
+          ]}
         />
-        <LabeledSelect 
-            label="Performance Goal" 
-            tooltip="The primary metric to optimize for."
-            value={config.performanceGoal}
-            onChange={(e) => handleChange('performanceGoal', e.target.value)}
-            options={[
-                { value: 'High_IR', label: 'High Information Ratio' },
-                { value: 'High_Return', label: 'High Return' },
-                { value: 'Low_Drawdown', label: 'Low Drawdown' },
-                { value: 'Low_Turnover', label: 'Low Turnover' },
-            ]}
+        <LabeledSelect
+          label="Performance Goal"
+          tooltip="The primary metric to optimize for."
+          value={config.performanceGoal}
+          onChange={(e) => handleChange('performanceGoal', e.target.value)}
+          options={[
+            { value: 'High_IR', label: 'High Information Ratio' },
+            { value: 'High_Return', label: 'High Return' },
+            { value: 'Low_Drawdown', label: 'Low Drawdown' },
+            { value: 'Low_Turnover', label: 'Low Turnover' },
+          ]}
         />
       </Section>
-      
+
       <Section title="Alpha Parameters">
-        <LabeledSelect 
-            label="Universe" 
-            tooltip={tooltips.universe}
-            value={config.universe}
-            onChange={(e) => handleChange('universe', e.target.value)}
-            options={[
-                { value: 'TOP_500', label: 'TOP 500' },
-                { value: 'TOP_1000', label: 'TOP 1000' },
-                { value: 'TOP_3000', label: 'TOP 3000' },
-            ]}
+        <LabeledSelect
+          label="Universe"
+          tooltip={tooltips.universe}
+          value={config.universe}
+          onChange={(e) => handleChange('universe', e.target.value)}
+          options={[
+            { value: 'TOP_500', label: 'TOP 500' },
+            { value: 'TOP_1000', label: 'TOP 1000' },
+            { value: 'TOP_3000', label: 'TOP 3000' },
+          ]}
         />
-         <ParameterSlider
+        <ParameterSlider
           label="Delay (days)"
           min={0}
           max={5}
@@ -158,17 +172,17 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, setConfig }) =
       </Section>
 
       <Section title="Risk & Neutralization">
-        <LabeledSelect 
-            label="Neutralization" 
-            tooltip={tooltips.neutralization}
-            value={config.neutralization}
-            onChange={(e) => handleChange('neutralization', e.target.value)}
-            options={[
-                { value: 'None', label: 'None' },
-                { value: 'Market', label: 'Market Neutral' },
-                { value: 'Industry', label: 'Industry Neutral' },
-                { value: 'Factor', label: 'Factor Neutral' },
-            ]}
+        <LabeledSelect
+          label="Neutralization"
+          tooltip={tooltips.neutralization}
+          value={config.neutralization}
+          onChange={(e) => handleChange('neutralization', e.target.value)}
+          options={[
+            { value: 'None', label: 'None' },
+            { value: 'Market', label: 'Market Neutral' },
+            { value: 'Industry', label: 'Industry Neutral' },
+            { value: 'Factor', label: 'Factor Neutral' },
+          ]}
         />
       </Section>
     </div>
