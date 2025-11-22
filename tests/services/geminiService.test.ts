@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateAlphaExpression } from '../services/geminiService';
-import { AppError, ErrorCodes } from '../utils/errorHandler';
+import { AppError } from '../utils/errorHandler';
 
 // Mock fetch
 global.fetch = vi.fn();

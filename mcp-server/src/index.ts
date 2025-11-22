@@ -14,7 +14,7 @@ import {
   searchTickers,
   CorsActivationError,
 } from './services/yahooFinanceService.js';
-import { ConfigSchema, type Config, type HistoricalData, type BacktestResults } from './types.js';
+import { ConfigSchema, type BacktestResults } from './types.js';
 
 // Define the tools available through MCP
 const tools: Tool[] = [
@@ -285,7 +285,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'simulate_backtest': {
-        const { expression, config } = z
+        const { expression } = z
           .object({
             expression: z.string(),
             config: z

@@ -11,7 +11,7 @@ import { KRGuideExpander } from './components/KRGuideExpander';
 import { ResultsDashboard } from './components/ResultsDashboard';
 import type { BacktestResults } from './types';
 import { simulateBacktest } from './services/backtestService';
-import { AppError, getUserFriendlyMessage } from './utils/errorHandler';
+import { getUserFriendlyMessage } from './utils/errorHandler';
 
 const App: React.FC = () => {
   const [config, setConfig] = useState<Config>(defaultConfig);

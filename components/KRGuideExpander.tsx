@@ -127,8 +127,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'rank(close / delay(close, 20)) - rank(volume)';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >
@@ -138,8 +138,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'rank(returns, 20) - Ts_rank(volume, 5)';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >
@@ -149,8 +149,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'z(revenue) + z(ebitda) + z(1/price)';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >
@@ -160,8 +160,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'rank(close) - rank(volume)';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >
@@ -171,8 +171,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'Ts_rank(close/delay(close,1), 10) - Ts_rank(volume, 10)';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >
@@ -188,8 +188,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'rank(close / delay(close, 60)) / (1 + stddev(returns, 20))';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >
@@ -199,8 +199,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'rank(1/price) + z(revenue) - z(stddev(returns, 60))';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >
@@ -210,8 +210,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'correlation(returns, volume, 20) - Ts_rank(stddev(returns, 20), 60)';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >
@@ -227,8 +227,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'rank(returns, 60) - rank(stddev(returns, 20))';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >
@@ -238,8 +238,8 @@ export const KRGuideExpander: React.FC<KRGuideExpanderProps> = ({ onApplyPreset,
                   type="button"
                   onClick={() => {
                     const e = 'softmax(rank(returns,20), tau=0.5) / vol';
-                    onApplyPreset && onApplyPreset(e);
-                    onRun && onRun(e);
+                    onApplyPreset?.(e);
+                    onRun?.(e);
                   }}
                   className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-cyan-300 text-left border border-gray-700"
                 >

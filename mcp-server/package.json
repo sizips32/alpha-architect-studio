@@ -13,8 +13,9 @@
     "watch": "tsx watch src/index.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.11.4",
     "@google/genai": "^1.24.0",
+    "@modelcontextprotocol/sdk": "^1.11.4",
+    "react-is": "^19.2.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {

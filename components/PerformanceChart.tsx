@@ -1,7 +1,5 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -9,8 +7,6 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  Defs,
-  Gradient,
 } from 'recharts';
 import type { PnlDataPoint } from '../types';
 

@@ -25,7 +25,7 @@ export const DevelopmentCanvas: React.FC = () => {
     <div className="p-6 md:p-8 bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-700">
       <div className="text-center mb-10">
         <h2 className="text-2xl font-bold text-white">
-          The Quant's Mindset: A Guide to Alpha Development
+          The Quant&apos;s Mindset: A Guide to Alpha Development
         </h2>
         <p className="mt-2 text-md text-gray-400">
           This studio helps you generate and refine alpha ideas. Success requires not just good

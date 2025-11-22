@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import type { BacktestResults } from '../types';
 import { KpiCard } from './KpiCard';
 import { PerformanceChart } from './PerformanceChart';
@@ -98,8 +98,8 @@ const WalkthroughGuide: React.FC = () => (
         <div>
           <h3 className="text-lg font-semibold text-white">3. Run Backtest</h3>
           <p className="mt-1 text-sm text-gray-400">
-            Click the <strong className="text-cyan-400">"Run Backtest"</strong> button. The engine
-            will simulate your strategy against historical data.
+            Click the <strong className="text-cyan-400">&quot;Run Backtest&quot;</strong> button.
+            The engine will simulate your strategy against historical data.
           </p>
         </div>
       </div>
@@ -225,19 +225,16 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ results, isL
 
   const { kpis, pnlData } = results;
 
-  // Memoize KPI values to prevent unnecessary recalculations
-  const kpiValues = useMemo(
-    () => ({
-      ir: kpis.ir.toFixed(2),
-      annualReturn: `${(kpis.annualReturn * 100).toFixed(2)}%`,
-      maxDrawdown: `${(kpis.maxDrawdown * 100).toFixed(2)}%`,
-      turnover: `${(kpis.turnover * 100).toFixed(2)}%`,
-      margin: (kpis.margin * 10000).toFixed(2),
-      correlation: kpis.correlation.toFixed(2),
-      isAnnualReturnPositive: kpis.annualReturn > 0,
-    }),
-    [kpis]
-  );
+  // Format KPI values for display
+  const kpiValues = {
+    ir: kpis.ir.toFixed(2),
+    annualReturn: `${(kpis.annualReturn * 100).toFixed(2)}%`,
+    maxDrawdown: `${(kpis.maxDrawdown * 100).toFixed(2)}%`,
+    turnover: `${(kpis.turnover * 100).toFixed(2)}%`,
+    margin: (kpis.margin * 10000).toFixed(2),
+    correlation: kpis.correlation.toFixed(2),
+    isAnnualReturnPositive: kpis.annualReturn > 0,
+  };
 
   return (
     <div className="space-y-6 lg:space-y-8">
