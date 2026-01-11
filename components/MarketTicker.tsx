@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   getMarketIndices,
   getKoreanTopStocks,
   getUSTechStocks,
   searchStocks,
   getStockSummary,
+  getHistoricalData,
   type StockSummary,
   type SearchResult,
+  type MarketData,
 } from '../services/marketDataService';
 
 type TabType = 'indices' | 'korean' | 'usTech' | 'search';
@@ -139,6 +142,11 @@ export const MarketTicker: React.FC = () => {
   const [selectedStock, setSelectedStock] = useState<StockSummary | null>(null);
   const [stockLoading, setStockLoading] = useState(false);
 
+  // Chart state
+  const [chartData, setChartData] = useState<MarketData[]>([]);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [chartPeriod, setChartPeriod] = useState<number>(30);
+
   const fetchData = useCallback(async () => {
     if (activeTab === 'search') return;
 
@@ -205,19 +213,47 @@ export const MarketTicker: React.FC = () => {
     }
   }, [searchQuery]);
 
-  const handleSelectStock = useCallback(async (symbol: string) => {
-    setStockLoading(true);
-    setError(null);
+  const handleSelectStock = useCallback(
+    async (symbol: string) => {
+      setStockLoading(true);
+      setChartLoading(true);
+      setError(null);
+      setChartData([]);
 
-    try {
-      const stock = await getStockSummary(symbol);
-      setSelectedStock(stock);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '종목 정보를 가져오는데 실패했습니다.');
-    } finally {
-      setStockLoading(false);
-    }
-  }, []);
+      try {
+        const [stock, historical] = await Promise.all([
+          getStockSummary(symbol),
+          getHistoricalData(symbol, chartPeriod),
+        ]);
+        setSelectedStock(stock);
+        setChartData(historical.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '종목 정보를 가져오는데 실패했습니다.');
+      } finally {
+        setStockLoading(false);
+        setChartLoading(false);
+      }
+    },
+    [chartPeriod]
+  );
+
+  const handlePeriodChange = useCallback(
+    async (days: number) => {
+      if (!selectedStock) return;
+      setChartPeriod(days);
+      setChartLoading(true);
+
+      try {
+        const historical = await getHistoricalData(selectedStock.symbol, days);
+        setChartData(historical.data);
+      } catch (err) {
+        console.error('Failed to load chart data:', err);
+      } finally {
+        setChartLoading(false);
+      }
+    },
+    [selectedStock]
+  );
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -282,6 +318,110 @@ export const MarketTicker: React.FC = () => {
                   {selectedStock.changePercent.toFixed(2)}%
                 </div>
               </div>
+            </div>
+
+            {/* Chart Period Buttons */}
+            <div className="flex gap-2 mb-3">
+              {[
+                { days: 7, label: '1주' },
+                { days: 30, label: '1개월' },
+                { days: 90, label: '3개월' },
+                { days: 365, label: '1년' },
+              ].map((period) => (
+                <button
+                  key={period.days}
+                  onClick={() => handlePeriodChange(period.days)}
+                  disabled={chartLoading}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded transition-colors ${
+                    chartPeriod === period.days
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  } disabled:opacity-50`}
+                >
+                  {period.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Price Chart */}
+            <div className="h-40 mb-4">
+              {chartLoading ? (
+                <div className="flex items-center justify-center h-full bg-gray-900/50 rounded">
+                  <SmallSpinner />
+                </div>
+              ) : chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                        <stop
+                          offset="5%"
+                          stopColor={isPositive ? '#10B981' : '#EF4444'}
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor={isPositive ? '#10B981' : '#EF4444'}
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: '#6B7280', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                      }}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis
+                      tick={{ fill: '#6B7280', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      domain={['auto', 'auto']}
+                      tickFormatter={(value) =>
+                        selectedStock.symbol.includes('.KS') || selectedStock.symbol.includes('.KQ')
+                          ? `₩${(value / 1000).toFixed(0)}k`
+                          : `$${value.toFixed(0)}`
+                      }
+                      width={50}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1F2937',
+                        border: '1px solid #374151',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                      }}
+                      labelStyle={{ color: '#9CA3AF' }}
+                      formatter={(value: number) => [
+                        selectedStock.symbol.includes('.KS') || selectedStock.symbol.includes('.KQ')
+                          ? `₩${value.toLocaleString()}`
+                          : `$${value.toFixed(2)}`,
+                        '종가',
+                      ]}
+                      labelFormatter={(label) => {
+                        const date = new Date(label);
+                        return date.toLocaleDateString('ko-KR');
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="close"
+                      stroke={isPositive ? '#10B981' : '#EF4444'}
+                      strokeWidth={2}
+                      fill="url(#colorPrice)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full bg-gray-900/50 rounded text-gray-500 text-sm">
+                  차트 데이터 없음
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-sm">
