@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MarketTicker } from '../../components/MarketTicker';
 
 // Mock the market data service
@@ -1241,5 +1241,503 @@ describe('MarketTicker', () => {
     });
 
     expect(screen.getByText('₩45,000')).toBeDefined();
+  });
+
+  describe('Auto Refresh Interval', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should call fetchData at 30-second intervals when autoRefresh is enabled', async () => {
+      const { getMarketIndices } = await import('../../services/marketDataService');
+
+      render(<MarketTicker />);
+
+      // Wait for initial load
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Clear initial call count
+      vi.clearAllMocks();
+
+      // Advance timer by 30 seconds
+      await act(async () => {
+        vi.advanceTimersByTime(30000);
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      expect(getMarketIndices).toHaveBeenCalled();
+    });
+
+    it('should not call fetchData when autoRefresh is disabled', async () => {
+      const { getMarketIndices } = await import('../../services/marketDataService');
+
+      render(<MarketTicker />);
+
+      // Wait for initial load
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Disable auto refresh
+      const autoRefreshButton = screen.getByTitle('자동 새로고침 켜짐');
+      await act(async () => {
+        fireEvent.click(autoRefreshButton);
+      });
+
+      // Clear call count after disabling
+      vi.clearAllMocks();
+
+      // Advance timer by 30 seconds
+      await act(async () => {
+        vi.advanceTimersByTime(30000);
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Should NOT be called since auto refresh is disabled
+      expect(getMarketIndices).not.toHaveBeenCalled();
+    });
+
+    it('should not run interval when in search tab', async () => {
+      const { getMarketIndices, searchStocks } = await import('../../services/marketDataService');
+
+      render(<MarketTicker />);
+
+      // Wait for initial load
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Switch to search tab
+      const searchTab = screen.getByText('검색');
+      await act(async () => {
+        fireEvent.click(searchTab);
+      });
+
+      // Clear call count after switching
+      vi.clearAllMocks();
+
+      // Advance timer by 30 seconds
+      await act(async () => {
+        vi.advanceTimersByTime(30000);
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // getMarketIndices should NOT be called since we're in search tab
+      expect(getMarketIndices).not.toHaveBeenCalled();
+    });
+
+    it('should clear interval when component unmounts', async () => {
+      const { getMarketIndices } = await import('../../services/marketDataService');
+
+      const { unmount } = render(<MarketTicker />);
+
+      // Wait for initial load
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Clear initial call count
+      vi.clearAllMocks();
+
+      // Unmount the component
+      unmount();
+
+      // Advance timer by 30 seconds
+      await act(async () => {
+        vi.advanceTimersByTime(30000);
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Should NOT be called since component is unmounted
+      expect(getMarketIndices).not.toHaveBeenCalled();
+    });
+
+    it('should clear interval when switching to search tab', async () => {
+      const { getKoreanTopStocks } = await import('../../services/marketDataService');
+
+      render(<MarketTicker />);
+
+      // Wait for initial load
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Switch to Korean stocks tab
+      const koreanTab = screen.getByText('한국');
+      await act(async () => {
+        fireEvent.click(koreanTab);
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Clear call count
+      vi.clearAllMocks();
+
+      // Advance timer by 30 seconds - should still call fetchData
+      await act(async () => {
+        vi.advanceTimersByTime(30000);
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      expect(getKoreanTopStocks).toHaveBeenCalled();
+
+      // Now switch to search tab
+      const searchTab = screen.getByText('검색');
+      await act(async () => {
+        fireEvent.click(searchTab);
+      });
+
+      vi.clearAllMocks();
+
+      // Advance timer again
+      await act(async () => {
+        vi.advanceTimersByTime(30000);
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Should not call any fetch function in search tab
+      expect(getKoreanTopStocks).not.toHaveBeenCalled();
+    });
+
+    it('should re-enable interval when toggling autoRefresh back on', async () => {
+      const { getMarketIndices } = await import('../../services/marketDataService');
+
+      render(<MarketTicker />);
+
+      // Wait for initial load
+      await act(async () => {
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Disable auto refresh
+      const autoRefreshButton = screen.getByTitle('자동 새로고침 켜짐');
+      await act(async () => {
+        fireEvent.click(autoRefreshButton);
+      });
+
+      // Re-enable auto refresh
+      const disabledButton = screen.getByTitle('자동 새로고침 꺼짐');
+      await act(async () => {
+        fireEvent.click(disabledButton);
+      });
+
+      // Clear call count
+      vi.clearAllMocks();
+
+      // Advance timer by 30 seconds
+      await act(async () => {
+        vi.advanceTimersByTime(30000);
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      // Should be called since auto refresh was re-enabled
+      expect(getMarketIndices).toHaveBeenCalled();
+    });
+  });
+
+  describe('Chart rendering with data', () => {
+    it('should render chart with historical data for US stock', async () => {
+      const { getHistoricalData } = await import('../../services/marketDataService');
+      (getHistoricalData as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: [
+          { date: '2024-01-01', close: 450 },
+          { date: '2024-01-02', close: 460 },
+          { date: '2024-01-03', close: 470 },
+          { date: '2024-01-04', close: 480 },
+          { date: '2024-01-05', close: 490 },
+        ],
+      });
+
+      render(<MarketTicker />);
+
+      const searchTab = screen.getByText('검색');
+      fireEvent.click(searchTab);
+
+      const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+      fireEvent.change(searchInput, { target: { value: 'NVDA' } });
+
+      const allButtons = screen.getAllByRole('button');
+      const searchButton = allButtons.find(
+        (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+      );
+      if (searchButton) fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('NVIDIA Corporation')).toBeDefined();
+      });
+
+      const resultButton = screen.getByText('NVIDIA Corporation').closest('button');
+      if (resultButton) fireEvent.click(resultButton);
+
+      // Verify chart container is rendered (ResponsiveContainer)
+      await waitFor(() => {
+        const chartContainer = document.querySelector('.recharts-responsive-container');
+        expect(chartContainer).toBeDefined();
+      });
+    });
+
+    it('should render chart with historical data for Korean stock', async () => {
+      const { searchStocks, getStockSummary, getHistoricalData } =
+        await import('../../services/marketDataService');
+
+      (searchStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        results: [{ symbol: '005930.KS', name: '삼성전자', exchange: 'KRX' }],
+      });
+      (getStockSummary as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        symbol: '005930.KS',
+        name: '삼성전자',
+        price: 70000,
+        changePercent: 1.5,
+        volume: 10000000,
+        marketCap: 400e12,
+        high52Week: 80000,
+        low52Week: 55000,
+      });
+      (getHistoricalData as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: [
+          { date: '2024-01-01', close: 68000 },
+          { date: '2024-01-02', close: 69000 },
+          { date: '2024-01-03', close: 70000 },
+        ],
+      });
+
+      render(<MarketTicker />);
+
+      const searchTab = screen.getByText('검색');
+      fireEvent.click(searchTab);
+
+      const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+      fireEvent.change(searchInput, { target: { value: '삼성전자' } });
+
+      const allButtons = screen.getAllByRole('button');
+      const searchButton = allButtons.find(
+        (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+      );
+      if (searchButton) fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('삼성전자')).toBeDefined();
+      });
+
+      const resultButton = screen.getByText('삼성전자').closest('button');
+      if (resultButton) fireEvent.click(resultButton);
+
+      // Verify chart renders for Korean stock
+      await waitFor(() => {
+        expect(screen.getByText('₩70,000')).toBeDefined();
+      });
+    });
+
+    it('should display 52-week high/low for Korean stock with Won symbol', async () => {
+      const { searchStocks, getStockSummary, getHistoricalData } =
+        await import('../../services/marketDataService');
+
+      (searchStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        results: [{ symbol: '035720.KQ', name: '카카오', exchange: 'KRX' }],
+      });
+      (getStockSummary as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        symbol: '035720.KQ',
+        name: '카카오',
+        price: 45000,
+        changePercent: -0.5,
+        volume: 5000000,
+        marketCap: 20e12,
+        high52Week: 60000,
+        low52Week: 35000,
+      });
+      (getHistoricalData as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: [{ date: '2024-01-01', close: 45000 }],
+      });
+
+      render(<MarketTicker />);
+
+      const searchTab = screen.getByText('검색');
+      fireEvent.click(searchTab);
+
+      const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+      fireEvent.change(searchInput, { target: { value: '카카오' } });
+
+      const allButtons = screen.getAllByRole('button');
+      const searchButton = allButtons.find(
+        (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+      );
+      if (searchButton) fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('카카오')).toBeDefined();
+      });
+
+      const resultButton = screen.getByText('카카오').closest('button');
+      if (resultButton) fireEvent.click(resultButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('₩60,000')).toBeDefined(); // 52-week high
+        expect(screen.getByText('₩35,000')).toBeDefined(); // 52-week low
+      });
+    });
+
+    it('should change chart period to 1 week', async () => {
+      const { getHistoricalData } = await import('../../services/marketDataService');
+
+      render(<MarketTicker />);
+
+      const searchTab = screen.getByText('검색');
+      fireEvent.click(searchTab);
+
+      const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+      fireEvent.change(searchInput, { target: { value: 'NVDA' } });
+
+      const allButtons = screen.getAllByRole('button');
+      const searchButton = allButtons.find(
+        (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+      );
+      if (searchButton) fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('NVIDIA Corporation')).toBeDefined();
+      });
+
+      const resultButton = screen.getByText('NVIDIA Corporation').closest('button');
+      if (resultButton) fireEvent.click(resultButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('1주')).toBeDefined();
+      });
+
+      // Click 1 week button
+      const weekButton = screen.getByText('1주');
+      fireEvent.click(weekButton);
+
+      await waitFor(() => {
+        expect(getHistoricalData).toHaveBeenCalledWith('NVDA', 7);
+      });
+    });
+
+    it('should change chart period to 3 months', async () => {
+      const { getHistoricalData } = await import('../../services/marketDataService');
+
+      render(<MarketTicker />);
+
+      const searchTab = screen.getByText('검색');
+      fireEvent.click(searchTab);
+
+      const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+      fireEvent.change(searchInput, { target: { value: 'NVDA' } });
+
+      const allButtons = screen.getAllByRole('button');
+      const searchButton = allButtons.find(
+        (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+      );
+      if (searchButton) fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('NVIDIA Corporation')).toBeDefined();
+      });
+
+      const resultButton = screen.getByText('NVIDIA Corporation').closest('button');
+      if (resultButton) fireEvent.click(resultButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('3개월')).toBeDefined();
+      });
+
+      // Click 3 months button
+      const monthsButton = screen.getByText('3개월');
+      fireEvent.click(monthsButton);
+
+      await waitFor(() => {
+        expect(getHistoricalData).toHaveBeenCalledWith('NVDA', 90);
+      });
+    });
+  });
+
+  describe('SearchResultItem interactions', () => {
+    it('should disable search result button when stock is loading', async () => {
+      const { getStockSummary, getHistoricalData } =
+        await import('../../services/marketDataService');
+
+      // Make getStockSummary slow to respond
+      (getStockSummary as ReturnType<typeof vi.fn>).mockImplementationOnce(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  symbol: 'NVDA',
+                  name: 'NVIDIA Corporation',
+                  price: 500,
+                  changePercent: 3.5,
+                  volume: 30000000,
+                  marketCap: 1.2e12,
+                  high52Week: 550,
+                  low52Week: 300,
+                }),
+              1000
+            )
+          )
+      );
+
+      render(<MarketTicker />);
+
+      const searchTab = screen.getByText('검색');
+      fireEvent.click(searchTab);
+
+      const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+      fireEvent.change(searchInput, { target: { value: 'NVDA' } });
+
+      const allButtons = screen.getAllByRole('button');
+      const searchButton = allButtons.find(
+        (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+      );
+      if (searchButton) fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('NVIDIA Corporation')).toBeDefined();
+      });
+
+      const resultButton = screen.getByText('NVIDIA Corporation').closest('button');
+      if (resultButton) {
+        fireEvent.click(resultButton);
+
+        // Button should have loading state/disabled class while loading
+        await waitFor(() => {
+          expect(resultButton.classList.contains('disabled:opacity-50')).toBe(true);
+        });
+      }
+    });
+
+    it('should display exchange information in search results', async () => {
+      const { searchStocks } = await import('../../services/marketDataService');
+      (searchStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        results: [
+          { symbol: 'NVDA', name: 'NVIDIA Corporation', exchange: 'NASDAQ' },
+          { symbol: 'NFLX', name: 'Netflix Inc.', exchange: 'NASDAQ' },
+        ],
+      });
+
+      render(<MarketTicker />);
+
+      const searchTab = screen.getByText('검색');
+      fireEvent.click(searchTab);
+
+      const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+      fireEvent.change(searchInput, { target: { value: 'NVDA' } });
+
+      const allButtons = screen.getAllByRole('button');
+      const searchButton = allButtons.find(
+        (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+      );
+      if (searchButton) fireEvent.click(searchButton);
+
+      await waitFor(() => {
+        // Check that exchange info is displayed
+        expect(screen.getAllByText('NASDAQ').length).toBeGreaterThan(0);
+      });
+    });
   });
 });

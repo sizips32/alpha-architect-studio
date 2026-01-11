@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   AreaChart,
   Area,
@@ -15,6 +15,18 @@ import {
   LineChart,
 } from 'recharts';
 import type { PnlDataPoint, BenchmarkData } from '../types';
+import {
+  formatYAxis,
+  formatPercent,
+  formatDayLabel,
+  formatComparisonTooltip,
+  formatComparisonLegend,
+  formatReturnsTooltip,
+  formatDrawdownTooltip,
+  formatPnlTooltip,
+  calculateEnhancedData,
+  calculateStats,
+} from '../utils/chartFormatters';
 
 /**
  * Props for the PerformanceChart component
@@ -38,98 +50,13 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, benchm
 
   // Calculate enhanced data with returns and drawdown
   const enhancedData = useMemo(() => {
-    if (!data || data.length === 0) return [];
-
-    let peak = data[0].value;
-    let benchmarkPeak = benchmark?.data[0]?.value ?? data[0].value;
-
-    return data.map((point, index) => {
-      const prevValue = index > 0 ? data[index - 1].value : point.value;
-      const dailyReturn = index > 0 ? ((point.value - prevValue) / prevValue) * 100 : 0;
-
-      // Update peak for drawdown calculation
-      if (point.value > peak) {
-        peak = point.value;
-      }
-      const drawdown = ((point.value - peak) / peak) * 100;
-
-      // Benchmark data
-      const benchmarkValue = benchmark?.data[index]?.value;
-      let benchmarkDrawdown = 0;
-      if (benchmarkValue) {
-        if (benchmarkValue > benchmarkPeak) {
-          benchmarkPeak = benchmarkValue;
-        }
-        benchmarkDrawdown = ((benchmarkValue - benchmarkPeak) / benchmarkPeak) * 100;
-      }
-
-      // Normalized values for comparison (base 100)
-      const normalizedPortfolio = (point.value / data[0].value) * 100;
-      const normalizedBenchmark = benchmarkValue
-        ? (benchmarkValue / benchmark!.data[0].value) * 100
-        : null;
-
-      return {
-        ...point,
-        dailyReturn: Number(dailyReturn.toFixed(3)),
-        drawdown: Number(drawdown.toFixed(3)),
-        cumReturn: Number((((point.value - data[0].value) / data[0].value) * 100).toFixed(2)),
-        benchmarkValue,
-        benchmarkDrawdown: Number(benchmarkDrawdown.toFixed(3)),
-        normalizedPortfolio: Number(normalizedPortfolio.toFixed(2)),
-        normalizedBenchmark: normalizedBenchmark ? Number(normalizedBenchmark.toFixed(2)) : null,
-      };
-    });
+    return calculateEnhancedData(data, benchmark?.data);
   }, [data, benchmark]);
 
   // Calculate statistics
   const stats = useMemo(() => {
-    if (!enhancedData || enhancedData.length === 0) {
-      return {
-        totalReturn: 0,
-        maxDrawdown: 0,
-        avgDailyReturn: 0,
-        volatility: 0,
-        sharpe: 0,
-        winRate: 0,
-        alpha: 0,
-        benchmarkReturn: 0,
-      };
-    }
-
-    const returns = enhancedData.map((d) => d.dailyReturn).filter((_, i) => i > 0);
-    const totalReturn = enhancedData[enhancedData.length - 1].cumReturn;
-    const maxDrawdown = Math.min(...enhancedData.map((d) => d.drawdown));
-    const avgDailyReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
-    const variance =
-      returns.reduce((sum, r) => sum + Math.pow(r - avgDailyReturn, 2), 0) / returns.length;
-    const volatility = Math.sqrt(variance) * Math.sqrt(252); // Annualized
-    const sharpe = volatility > 0 ? (avgDailyReturn * 252) / volatility : 0;
-    const winRate = (returns.filter((r) => r > 0).length / returns.length) * 100;
-
-    // Benchmark comparison
-    const benchmarkReturn = benchmark?.return ?? 0;
-    const alpha = totalReturn - benchmarkReturn;
-
-    return {
-      totalReturn,
-      maxDrawdown,
-      avgDailyReturn,
-      volatility,
-      sharpe,
-      winRate,
-      alpha,
-      benchmarkReturn,
-    };
+    return calculateStats(enhancedData, benchmark?.return);
   }, [enhancedData, benchmark]);
-
-  const formatYAxis = useCallback((tick: number) => {
-    return tick.toLocaleString();
-  }, []);
-
-  const formatPercent = useCallback((tick: number) => {
-    return `${tick.toFixed(1)}%`;
-  }, []);
 
   const views: { id: ChartView; label: string }[] = [
     { id: 'pnl', label: 'PnL' },
@@ -169,18 +96,12 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, benchm
                   borderRadius: '0.5rem',
                 }}
                 labelStyle={{ color: '#cbd5e1' }}
-                formatter={(value: number, name: string) => {
-                  const label =
-                    name === 'normalizedPortfolio' ? '포트폴리오' : (benchmark?.name ?? '벤치마크');
-                  return [`${(value - 100).toFixed(2)}%`, label];
-                }}
-                labelFormatter={(label) => `Day ${label}`}
-              />
-              <Legend
-                formatter={(value) =>
-                  value === 'normalizedPortfolio' ? '포트폴리오' : (benchmark?.name ?? '벤치마크')
+                formatter={(value: number, name: string) =>
+                  formatComparisonTooltip(value, name, benchmark?.name)
                 }
+                labelFormatter={formatDayLabel}
               />
+              <Legend formatter={(value) => formatComparisonLegend(value, benchmark?.name)} />
               <Line
                 type="monotone"
                 dataKey="normalizedPortfolio"
@@ -232,8 +153,8 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, benchm
                   borderRadius: '0.5rem',
                 }}
                 labelStyle={{ color: '#cbd5e1' }}
-                formatter={(value: number) => [`${value.toFixed(3)}%`, '일별 수익률']}
-                labelFormatter={(label) => `Day ${label}`}
+                formatter={(value: number) => formatReturnsTooltip(value)}
+                labelFormatter={formatDayLabel}
               />
               <Bar
                 dataKey="dailyReturn"
@@ -285,12 +206,10 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, benchm
                   borderRadius: '0.5rem',
                 }}
                 labelStyle={{ color: '#cbd5e1' }}
-                formatter={(value: number, name: string) => {
-                  const label =
-                    name === 'drawdown' ? '포트폴리오' : (benchmark?.name ?? '벤치마크');
-                  return [`${value.toFixed(2)}%`, `${label} 낙폭`];
-                }}
-                labelFormatter={(label) => `Day ${label}`}
+                formatter={(value: number, name: string) =>
+                  formatDrawdownTooltip(value, name, benchmark?.name)
+                }
+                labelFormatter={formatDayLabel}
               />
               {benchmark && showBenchmark && (
                 <Area
@@ -353,35 +272,28 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, benchm
                   name: string,
                   props: { payload?: { cumReturn?: number; benchmarkValue?: number } }
                 ) => {
+                  const result = formatPnlTooltip(
+                    value,
+                    name,
+                    props.payload?.cumReturn,
+                    benchmark?.name
+                  );
                   if (name === 'benchmarkValue') {
-                    return [
-                      value.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-                      benchmark?.name ?? '벤치마크',
-                    ];
+                    return [result.formattedValue, result.label];
                   }
-                  const cumReturn = props.payload?.cumReturn;
                   return [
                     <span key="value">
-                      {value.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                      {cumReturn !== undefined && (
-                        <span
-                          style={{
-                            marginLeft: '8px',
-                            color: cumReturn >= 0 ? '#4ade80' : '#f87171',
-                          }}
-                        >
-                          ({cumReturn >= 0 ? '+' : ''}
-                          {cumReturn}%)
+                      {result.formattedValue}
+                      {result.cumReturnText && (
+                        <span style={{ marginLeft: '8px', color: result.cumReturnColor }}>
+                          {result.cumReturnText}
                         </span>
                       )}
                     </span>,
-                    '포트폴리오',
+                    result.label,
                   ];
                 }}
-                labelFormatter={(label) => `Day ${label}`}
+                labelFormatter={formatDayLabel}
               />
               {benchmark && showBenchmark && (
                 <Line

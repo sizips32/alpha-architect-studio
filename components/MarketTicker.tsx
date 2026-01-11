@@ -11,6 +11,24 @@ import {
   type SearchResult,
   type MarketData,
 } from '../services/marketDataService';
+import {
+  formatPrice,
+  formatDetailPrice,
+  formatChangePercent,
+  formatChartXAxis,
+  formatChartYAxis,
+  formatChartTooltipPrice,
+  formatChartTooltipDate,
+  formatMarketCap,
+  formatVolume,
+  format52WeekPrice,
+  formatPE,
+  formatEPS,
+  getChangeColorClass,
+  getChangeBgClass,
+  getChartColor,
+  formatLastUpdate,
+} from '../utils/marketTickerFormatters';
 
 type TabType = 'indices' | 'korean' | 'usTech' | 'search';
 
@@ -20,21 +38,8 @@ interface TickerItemProps {
 
 const TickerItem: React.FC<TickerItemProps> = ({ stock }) => {
   const isPositive = stock.changePercent >= 0;
-  const changeColor = isPositive ? 'text-green-400' : 'text-red-400';
-  const bgColor = isPositive ? 'bg-green-500/10' : 'bg-red-500/10';
-
-  const formatPrice = (price: number, symbol: string) => {
-    if (symbol.includes('.KS') || symbol.includes('.KQ') || symbol.startsWith('^K')) {
-      return `₩${price.toLocaleString()}`;
-    }
-    if (symbol.startsWith('^')) {
-      return price.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    }
-    return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const changeColor = getChangeColorClass(stock.changePercent);
+  const bgColor = getChangeBgClass(stock.changePercent);
 
   return (
     <div
@@ -68,10 +73,7 @@ const TickerItem: React.FC<TickerItemProps> = ({ stock }) => {
               />
             </svg>
           )}
-          <span className="font-mono text-sm">
-            {isPositive ? '+' : ''}
-            {stock.changePercent.toFixed(2)}%
-          </span>
+          <span className="font-mono text-sm">{formatChangePercent(stock.changePercent)}</span>
         </div>
       </div>
     </div>
@@ -284,6 +286,7 @@ export const MarketTicker: React.FC = () => {
   const renderSearchContent = () => {
     if (selectedStock) {
       const isPositive = selectedStock.changePercent >= 0;
+      const chartColor = getChartColor(isPositive);
       return (
         <div className="space-y-4">
           <button
@@ -309,14 +312,9 @@ export const MarketTicker: React.FC = () => {
               </div>
               <div className={`text-right ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
                 <div className="text-xl font-bold">
-                  {selectedStock.symbol.includes('.KS') || selectedStock.symbol.includes('.KQ')
-                    ? `₩${selectedStock.price.toLocaleString()}`
-                    : `$${selectedStock.price.toFixed(2)}`}
+                  {formatDetailPrice(selectedStock.price, selectedStock.symbol)}
                 </div>
-                <div className="text-sm">
-                  {isPositive ? '+' : ''}
-                  {selectedStock.changePercent.toFixed(2)}%
-                </div>
+                <div className="text-sm">{formatChangePercent(selectedStock.changePercent)}</div>
               </div>
             </div>
 
@@ -354,16 +352,8 @@ export const MarketTicker: React.FC = () => {
                   <AreaChart data={chartData}>
                     <defs>
                       <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                        <stop
-                          offset="5%"
-                          stopColor={isPositive ? '#10B981' : '#EF4444'}
-                          stopOpacity={0.3}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor={isPositive ? '#10B981' : '#EF4444'}
-                          stopOpacity={0}
-                        />
+                        <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <XAxis
@@ -371,10 +361,7 @@ export const MarketTicker: React.FC = () => {
                       tick={{ fill: '#6B7280', fontSize: 10 }}
                       tickLine={false}
                       axisLine={false}
-                      tickFormatter={(value) => {
-                        const date = new Date(value);
-                        return `${date.getMonth() + 1}/${date.getDate()}`;
-                      }}
+                      tickFormatter={formatChartXAxis}
                       interval="preserveStartEnd"
                     />
                     <YAxis
@@ -382,11 +369,7 @@ export const MarketTicker: React.FC = () => {
                       tickLine={false}
                       axisLine={false}
                       domain={['auto', 'auto']}
-                      tickFormatter={(value) =>
-                        selectedStock.symbol.includes('.KS') || selectedStock.symbol.includes('.KQ')
-                          ? `₩${(value / 1000).toFixed(0)}k`
-                          : `$${value.toFixed(0)}`
-                      }
+                      tickFormatter={(value) => formatChartYAxis(value, selectedStock.symbol)}
                       width={50}
                     />
                     <Tooltip
@@ -398,20 +381,15 @@ export const MarketTicker: React.FC = () => {
                       }}
                       labelStyle={{ color: '#9CA3AF' }}
                       formatter={(value: number) => [
-                        selectedStock.symbol.includes('.KS') || selectedStock.symbol.includes('.KQ')
-                          ? `₩${value.toLocaleString()}`
-                          : `$${value.toFixed(2)}`,
+                        formatChartTooltipPrice(value, selectedStock.symbol),
                         '종가',
                       ]}
-                      labelFormatter={(label) => {
-                        const date = new Date(label);
-                        return date.toLocaleDateString('ko-KR');
-                      }}
+                      labelFormatter={formatChartTooltipDate}
                     />
                     <Area
                       type="monotone"
                       dataKey="close"
-                      stroke={isPositive ? '#10B981' : '#EF4444'}
+                      stroke={chartColor}
                       strokeWidth={2}
                       fill="url(#colorPrice)"
                     />
@@ -427,44 +405,36 @@ export const MarketTicker: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="bg-gray-900/50 rounded p-2">
                 <div className="text-gray-500">거래량</div>
-                <div className="text-white font-mono">{selectedStock.volume.toLocaleString()}</div>
+                <div className="text-white font-mono">{formatVolume(selectedStock.volume)}</div>
               </div>
               <div className="bg-gray-900/50 rounded p-2">
                 <div className="text-gray-500">시가총액</div>
                 <div className="text-white font-mono">
-                  {selectedStock.marketCap > 1e12
-                    ? `${(selectedStock.marketCap / 1e12).toFixed(2)}T`
-                    : selectedStock.marketCap > 1e9
-                      ? `${(selectedStock.marketCap / 1e9).toFixed(2)}B`
-                      : `${(selectedStock.marketCap / 1e6).toFixed(2)}M`}
+                  {formatMarketCap(selectedStock.marketCap)}
                 </div>
               </div>
               <div className="bg-gray-900/50 rounded p-2">
                 <div className="text-gray-500">52주 최고</div>
                 <div className="text-white font-mono">
-                  {selectedStock.symbol.includes('.KS') || selectedStock.symbol.includes('.KQ')
-                    ? `₩${selectedStock.high52Week.toLocaleString()}`
-                    : `$${selectedStock.high52Week.toFixed(2)}`}
+                  {format52WeekPrice(selectedStock.high52Week, selectedStock.symbol)}
                 </div>
               </div>
               <div className="bg-gray-900/50 rounded p-2">
                 <div className="text-gray-500">52주 최저</div>
                 <div className="text-white font-mono">
-                  {selectedStock.symbol.includes('.KS') || selectedStock.symbol.includes('.KQ')
-                    ? `₩${selectedStock.low52Week.toLocaleString()}`
-                    : `$${selectedStock.low52Week.toFixed(2)}`}
+                  {format52WeekPrice(selectedStock.low52Week, selectedStock.symbol)}
                 </div>
               </div>
               {selectedStock.pe && (
                 <div className="bg-gray-900/50 rounded p-2">
                   <div className="text-gray-500">PER</div>
-                  <div className="text-white font-mono">{selectedStock.pe.toFixed(2)}</div>
+                  <div className="text-white font-mono">{formatPE(selectedStock.pe)}</div>
                 </div>
               )}
               {selectedStock.eps && (
                 <div className="bg-gray-900/50 rounded p-2">
                   <div className="text-gray-500">EPS</div>
-                  <div className="text-white font-mono">{selectedStock.eps.toFixed(2)}</div>
+                  <div className="text-white font-mono">{formatEPS(selectedStock.eps)}</div>
                 </div>
               )}
             </div>
@@ -584,7 +554,7 @@ export const MarketTicker: React.FC = () => {
           </svg>
           <h3 className="font-bold text-white">실시간 시세</h3>
           {lastUpdate && activeTab !== 'search' && (
-            <span className="text-xs text-gray-500">{lastUpdate.toLocaleTimeString('ko-KR')}</span>
+            <span className="text-xs text-gray-500">{formatLastUpdate(lastUpdate)}</span>
           )}
         </div>
         {activeTab !== 'search' && (
