@@ -182,4 +182,205 @@ describe('ConfigPanel', () => {
     const sliders = screen.getAllByRole('slider');
     expect(sliders.length).toBe(4); // delay, lookbackDays, maxStockWeight, decay
   });
+
+  // Additional tests for complete coverage
+  describe('select onChange handlers', () => {
+    it('should call setConfig when performanceGoal is changed', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox');
+      const performanceGoalSelect = selects[2]; // Third select is performanceGoal
+
+      fireEvent.change(performanceGoalSelect, { target: { value: 'High_Return' } });
+
+      expect(mockSetConfig).toHaveBeenCalled();
+      // Verify the callback was called with a function
+      const callback = mockSetConfig.mock.calls[0][0];
+      expect(typeof callback).toBe('function');
+      // Execute the callback to verify it updates correctly
+      const result = callback(defaultConfig);
+      expect(result.performanceGoal).toBe('High_Return');
+    });
+
+    it('should update idea correctly', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[0], { target: { value: 'Value' } });
+
+      const callback = mockSetConfig.mock.calls[0][0];
+      const result = callback(defaultConfig);
+      expect(result.idea).toBe('Value');
+    });
+
+    it('should update region correctly', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[1], { target: { value: 'ASIA' } });
+
+      const callback = mockSetConfig.mock.calls[0][0];
+      const result = callback(defaultConfig);
+      expect(result.region).toBe('ASIA');
+    });
+
+    it('should update universe correctly', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[3], { target: { value: 'TOP_1000' } });
+
+      const callback = mockSetConfig.mock.calls[0][0];
+      const result = callback(defaultConfig);
+      expect(result.universe).toBe('TOP_1000');
+    });
+
+    it('should update neutralization correctly', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[4], { target: { value: 'Factor' } });
+
+      const callback = mockSetConfig.mock.calls[0][0];
+      const result = callback(defaultConfig);
+      expect(result.neutralization).toBe('Factor');
+    });
+  });
+
+  describe('slider onChange handlers', () => {
+    it('should call setConfig when lookbackDays slider is changed', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const sliders = screen.getAllByRole('slider');
+      const lookbackSlider = sliders[1]; // Second slider is lookbackDays
+
+      fireEvent.change(lookbackSlider, { target: { value: '120' } });
+
+      expect(mockSetConfig).toHaveBeenCalled();
+      const callback = mockSetConfig.mock.calls[0][0];
+      const result = callback(defaultConfig);
+      expect(result.lookbackDays).toBe(120);
+    });
+
+    it('should call setConfig when maxStockWeight slider is changed', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const sliders = screen.getAllByRole('slider');
+      const maxWeightSlider = sliders[2]; // Third slider is maxStockWeight
+
+      fireEvent.change(maxWeightSlider, { target: { value: '5' } });
+
+      expect(mockSetConfig).toHaveBeenCalled();
+      const callback = mockSetConfig.mock.calls[0][0];
+      const result = callback(defaultConfig);
+      expect(result.maxStockWeight).toBe(5);
+    });
+
+    it('should call setConfig when decay slider is changed', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const sliders = screen.getAllByRole('slider');
+      const decaySlider = sliders[3]; // Fourth slider is decay
+
+      fireEvent.change(decaySlider, { target: { value: '10' } });
+
+      expect(mockSetConfig).toHaveBeenCalled();
+      const callback = mockSetConfig.mock.calls[0][0];
+      const result = callback(defaultConfig);
+      expect(result.decay).toBe(10);
+    });
+
+    it('should update delay correctly', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const sliders = screen.getAllByRole('slider');
+      fireEvent.change(sliders[0], { target: { value: '5' } });
+
+      const callback = mockSetConfig.mock.calls[0][0];
+      const result = callback(defaultConfig);
+      expect(result.delay).toBe(5);
+    });
+  });
+
+  describe('config value preservation', () => {
+    it('should preserve other config values when updating one field', () => {
+      render(<ConfigPanel config={defaultConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[0], { target: { value: 'Seasonality' } });
+
+      const callback = mockSetConfig.mock.calls[0][0];
+      const result = callback(defaultConfig);
+
+      // Verify the changed value
+      expect(result.idea).toBe('Seasonality');
+      // Verify other values are preserved
+      expect(result.universe).toBe(defaultConfig.universe);
+      expect(result.delay).toBe(defaultConfig.delay);
+      expect(result.lookbackDays).toBe(defaultConfig.lookbackDays);
+      expect(result.maxStockWeight).toBe(defaultConfig.maxStockWeight);
+      expect(result.decay).toBe(defaultConfig.decay);
+      expect(result.neutralization).toBe(defaultConfig.neutralization);
+      expect(result.region).toBe(defaultConfig.region);
+      expect(result.performanceGoal).toBe(defaultConfig.performanceGoal);
+    });
+  });
+
+  describe('different config values', () => {
+    it('should render with different idea value', () => {
+      const customConfig: Config = { ...defaultConfig, idea: 'Reversion' };
+      render(<ConfigPanel config={customConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+      expect(selects[0].value).toBe('Reversion');
+    });
+
+    it('should render with different region value', () => {
+      const customConfig: Config = { ...defaultConfig, region: 'EU' };
+      render(<ConfigPanel config={customConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+      expect(selects[1].value).toBe('EU');
+    });
+
+    it('should render with different performanceGoal value', () => {
+      const customConfig: Config = { ...defaultConfig, performanceGoal: 'Low_Drawdown' };
+      render(<ConfigPanel config={customConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+      expect(selects[2].value).toBe('Low_Drawdown');
+    });
+
+    it('should render with different universe value', () => {
+      const customConfig: Config = { ...defaultConfig, universe: 'TOP_500' };
+      render(<ConfigPanel config={customConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+      expect(selects[3].value).toBe('TOP_500');
+    });
+
+    it('should render with different neutralization value', () => {
+      const customConfig: Config = { ...defaultConfig, neutralization: 'None' };
+      render(<ConfigPanel config={customConfig} setConfig={mockSetConfig} />);
+
+      const selects = screen.getAllByRole('combobox') as HTMLSelectElement[];
+      expect(selects[4].value).toBe('None');
+    });
+
+    it('should render with different maxStockWeight value', () => {
+      const customConfig: Config = { ...defaultConfig, maxStockWeight: 5 };
+      render(<ConfigPanel config={customConfig} setConfig={mockSetConfig} />);
+
+      const sliders = screen.getAllByRole('slider') as HTMLInputElement[];
+      expect(sliders[2].value).toBe('5'); // maxStockWeight
+    });
+
+    it('should render with different decay value', () => {
+      const customConfig: Config = { ...defaultConfig, decay: 15 };
+      render(<ConfigPanel config={customConfig} setConfig={mockSetConfig} />);
+
+      const sliders = screen.getAllByRole('slider') as HTMLInputElement[];
+      expect(sliders[3].value).toBe('15'); // decay
+    });
+  });
 });
