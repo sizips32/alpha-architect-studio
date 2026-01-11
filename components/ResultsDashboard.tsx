@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
-import type { BacktestResults } from '../types';
+import React, { useMemo, useCallback } from 'react';
+import type { BacktestResults, Config } from '../types';
 import { KpiCard } from './KpiCard';
 import { PerformanceChart } from './PerformanceChart';
 import { tooltips } from '../constants';
+import { exportToPdf } from '../utils/pdfExport';
 
 /**
  * Props for the ResultsDashboard component
@@ -12,6 +13,10 @@ interface ResultsDashboardProps {
   results: BacktestResults | null;
   /** Whether the backtest is currently loading */
   isLoading: boolean;
+  /** The alpha expression used for the backtest */
+  expression?: string;
+  /** The configuration used for the backtest */
+  config?: Config;
 }
 
 const IconWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -187,7 +192,18 @@ const AnalysisAndMindset: React.FC = () => (
  * @param results - Backtest results to display
  * @param isLoading - Loading state indicator
  */
-export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ results, isLoading }) => {
+export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
+  results,
+  isLoading,
+  expression,
+  config,
+}) => {
+  const handleExportPdf = useCallback(() => {
+    if (results && expression && config) {
+      exportToPdf({ results, expression, config });
+    }
+  }, [results, expression, config]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-900/50 rounded-lg border border-gray-800">
@@ -240,6 +256,33 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ results, isL
 
   return (
     <div className="space-y-6 lg:space-y-8">
+      {/* Header with Export Button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-white">백테스트 결과</h2>
+        <button
+          onClick={handleExportPdf}
+          disabled={!expression || !config}
+          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          PDF 내보내기
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <KpiCard title="정보비율" value={kpiValues.ir} tooltip={tooltips.ir} />
         <KpiCard

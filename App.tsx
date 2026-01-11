@@ -137,7 +137,12 @@ const App: React.FC = () => {
             백테스트 실행
           </button>
           <Suspense fallback={<LoadingFallback height="400px" />}>
-            <ResultsDashboard results={results} isLoading={isSimLoading} />
+            <ResultsDashboard
+              results={results}
+              isLoading={isSimLoading}
+              expression={alphaExpression}
+              config={config}
+            />
           </Suspense>
           <Suspense fallback={<LoadingFallback />}>
             <DevelopmentCanvas />
