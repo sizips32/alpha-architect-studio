@@ -4,6 +4,7 @@ import { KpiCard } from './KpiCard';
 import { PerformanceChart } from './PerformanceChart';
 import { tooltips } from '../constants';
 import { exportToPdf } from '../utils/pdfExport';
+import { exportToExcel } from '../utils/excelExport';
 
 /**
  * Props for the ResultsDashboard component
@@ -204,6 +205,12 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     }
   }, [results, expression, config]);
 
+  const handleExportExcel = useCallback(() => {
+    if (results && expression && config) {
+      exportToExcel({ results, expression, config });
+    }
+  }, [results, expression, config]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-900/50 rounded-lg border border-gray-800">
@@ -256,31 +263,58 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      {/* Header with Export Button */}
+      {/* Header with Export Buttons */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">백테스트 결과</h2>
-        <button
-          onClick={handleExportPdf}
-          disabled={!expression || !config}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportExcel}
+            disabled={!expression || !config}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
           >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          PDF 내보내기
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+              <polyline points="14 2 14 8 20 8" />
+              <path d="M8 13h2" />
+              <path d="M8 17h2" />
+              <path d="M14 13h2" />
+              <path d="M14 17h2" />
+            </svg>
+            Excel
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={!expression || !config}
+            className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
