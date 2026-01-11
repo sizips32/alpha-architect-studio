@@ -362,6 +362,57 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
       color: #ef4444;
     }
 
+    .sector-chart-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      margin: 20px 0;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .pie-chart-wrapper {
+      position: relative;
+    }
+
+    .pie-chart-title {
+      text-align: center;
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 10px;
+    }
+
+    .pie-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pie-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .pie-legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+    }
+
+    .pie-legend-label {
+      color: #374151;
+      min-width: 80px;
+    }
+
+    .pie-legend-value {
+      color: #6b7280;
+      font-weight: 500;
+    }
+
     .chart-container {
       text-align: center;
       margin: 20px 0;
@@ -502,7 +553,86 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
     </div>
 
     <div class="sector-stats">
-      <div class="sector-stats-title">섹터별 거래 통계</div>
+      <div class="sector-stats-title">섹터별 거래 비중</div>
+      <div class="sector-chart-container">
+        ${(() => {
+          // Calculate sector data for pie chart
+          const sectorData = new Map<string, number>();
+          trades.forEach((t) => {
+            sectorData.set(t.sector, (sectorData.get(t.sector) || 0) + t.amount);
+          });
+          const totalAmount = Array.from(sectorData.values()).reduce((a, b) => a + b, 0);
+          const sectors = Array.from(sectorData.entries())
+            .map(([name, amount]) => ({ name, amount, percent: (amount / totalAmount) * 100 }))
+            .sort((a, b) => b.amount - a.amount);
+
+          // Colors for sectors
+          const colors = [
+            '#0891b2',
+            '#8b5cf6',
+            '#f59e0b',
+            '#10b981',
+            '#ef4444',
+            '#6366f1',
+            '#ec4899',
+            '#14b8a6',
+          ];
+
+          // Generate SVG pie chart
+          const size = 160;
+          const center = size / 2;
+          const radius = 60;
+          let currentAngle = -90; // Start from top
+
+          const paths = sectors
+            .map((sector, i) => {
+              const angle = (sector.percent / 100) * 360;
+              const startAngle = currentAngle;
+              const endAngle = currentAngle + angle;
+              currentAngle = endAngle;
+
+              const startRad = (startAngle * Math.PI) / 180;
+              const endRad = (endAngle * Math.PI) / 180;
+
+              const x1 = center + radius * Math.cos(startRad);
+              const y1 = center + radius * Math.sin(startRad);
+              const x2 = center + radius * Math.cos(endRad);
+              const y2 = center + radius * Math.sin(endRad);
+
+              const largeArc = angle > 180 ? 1 : 0;
+
+              return `<path d="M ${center} ${center} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${radius} ${radius} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z" fill="${colors[i % colors.length]}" stroke="white" stroke-width="2"/>`;
+            })
+            .join('');
+
+          const legendItems = sectors
+            .map(
+              (sector, i) => `
+            <div class="pie-legend-item">
+              <div class="pie-legend-color" style="background:${colors[i % colors.length]}"></div>
+              <span class="pie-legend-label">${sector.name}</span>
+              <span class="pie-legend-value">${sector.percent.toFixed(1)}%</span>
+            </div>
+          `
+            )
+            .join('');
+
+          return `
+            <div class="pie-chart-wrapper">
+              <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                ${paths}
+                <circle cx="${center}" cy="${center}" r="30" fill="white"/>
+                <text x="${center}" y="${center - 5}" text-anchor="middle" font-size="10" fill="#6b7280">거래금액</text>
+                <text x="${center}" y="${center + 10}" text-anchor="middle" font-size="11" font-weight="600" fill="#374151">비중</text>
+              </svg>
+              <div class="pie-chart-title">거래금액 기준</div>
+            </div>
+            <div class="pie-legend">${legendItems}</div>
+          `;
+        })()}
+      </div>
+
+      <div class="sector-stats-title" style="margin-top: 20px;">섹터별 상세 통계</div>
       <div class="sector-stats-grid">
         ${(() => {
           const sectorMap = new Map<
