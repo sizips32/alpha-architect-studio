@@ -413,6 +413,45 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
       font-weight: 500;
     }
 
+    .monthly-chart-container {
+      margin: 20px 0;
+    }
+
+    .monthly-chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .monthly-stats {
+      display: flex;
+      gap: 20px;
+      font-size: 12px;
+    }
+
+    .monthly-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .monthly-stat-label {
+      color: #6b7280;
+    }
+
+    .monthly-stat-value {
+      font-weight: 600;
+    }
+
+    .monthly-stat-value.positive {
+      color: #10b981;
+    }
+
+    .monthly-stat-value.negative {
+      color: #ef4444;
+    }
+
     .chart-container {
       text-align: center;
       margin: 20px 0;
@@ -525,6 +564,112 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
     <h2 class="section-title">포트폴리오 손익 (PnL) 차트</h2>
     <div class="chart-container">
       ${chartSvg}
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">월별 수익률</h2>
+    <div class="monthly-chart-container">
+      ${(() => {
+        // Calculate monthly returns from PnL data
+        const monthlyData: { month: string; return: number }[] = [];
+        const daysPerMonth = 21; // Approximate trading days per month
+
+        for (let i = 0; i < pnlData.length; i += daysPerMonth) {
+          const startIdx = i;
+          const endIdx = Math.min(i + daysPerMonth - 1, pnlData.length - 1);
+          const startValue = pnlData[startIdx].value;
+          const endValue = pnlData[endIdx].value;
+          const monthReturn = ((endValue - startValue) / startValue) * 100;
+
+          const monthNum = Math.floor(i / daysPerMonth) + 1;
+          monthlyData.push({
+            month: `M${monthNum}`,
+            return: monthReturn,
+          });
+        }
+
+        // Chart dimensions
+        const width = 700;
+        const height = 180;
+        const padding = { top: 30, right: 20, bottom: 40, left: 50 };
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+
+        // Calculate scales
+        const maxReturn = Math.max(...monthlyData.map((d) => Math.abs(d.return)), 5);
+        const barWidth = (chartWidth / monthlyData.length) * 0.7;
+        const barGap = (chartWidth / monthlyData.length) * 0.3;
+
+        // Zero line position
+        const zeroY = padding.top + chartHeight / 2;
+
+        // Generate bars
+        const bars = monthlyData
+          .map((d, i) => {
+            const x = padding.left + i * (barWidth + barGap) + barGap / 2;
+            const barHeight = (Math.abs(d.return) / maxReturn) * (chartHeight / 2);
+            const y = d.return >= 0 ? zeroY - barHeight : zeroY;
+            const color = d.return >= 0 ? '#10b981' : '#ef4444';
+
+            return `
+            <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${color}" rx="2"/>
+            <text x="${(x + barWidth / 2).toFixed(1)}" y="${height - 10}" text-anchor="middle" font-size="9" fill="#6b7280">${d.month}</text>
+            <text x="${(x + barWidth / 2).toFixed(1)}" y="${(d.return >= 0 ? y - 5 : y + barHeight + 12).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="500" fill="${color}">${d.return >= 0 ? '+' : ''}${d.return.toFixed(1)}%</text>
+          `;
+          })
+          .join('');
+
+        // Grid lines
+        const gridLines = [-maxReturn, -maxReturn / 2, 0, maxReturn / 2, maxReturn]
+          .map((val) => {
+            const y = zeroY - (val / maxReturn) * (chartHeight / 2);
+            return `
+            <line x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}" stroke="${val === 0 ? '#374151' : '#e5e7eb'}" stroke-width="${val === 0 ? 1.5 : 1}"/>
+            <text x="${padding.left - 8}" y="${y.toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#6b7280">${val.toFixed(0)}%</text>
+          `;
+          })
+          .join('');
+
+        // Calculate stats
+        const positiveMonths = monthlyData.filter((d) => d.return > 0).length;
+        const negativeMonths = monthlyData.filter((d) => d.return < 0).length;
+        const avgReturn = monthlyData.reduce((sum, d) => sum + d.return, 0) / monthlyData.length;
+        const bestMonth = Math.max(...monthlyData.map((d) => d.return));
+        const worstMonth = Math.min(...monthlyData.map((d) => d.return));
+
+        return `
+          <div class="monthly-chart-header">
+            <div class="monthly-stats">
+              <div class="monthly-stat">
+                <span class="monthly-stat-label">수익 월:</span>
+                <span class="monthly-stat-value positive">${positiveMonths}개월</span>
+              </div>
+              <div class="monthly-stat">
+                <span class="monthly-stat-label">손실 월:</span>
+                <span class="monthly-stat-value negative">${negativeMonths}개월</span>
+              </div>
+              <div class="monthly-stat">
+                <span class="monthly-stat-label">평균:</span>
+                <span class="monthly-stat-value ${avgReturn >= 0 ? 'positive' : 'negative'}">${avgReturn >= 0 ? '+' : ''}${avgReturn.toFixed(2)}%</span>
+              </div>
+              <div class="monthly-stat">
+                <span class="monthly-stat-label">최고:</span>
+                <span class="monthly-stat-value positive">+${bestMonth.toFixed(2)}%</span>
+              </div>
+              <div class="monthly-stat">
+                <span class="monthly-stat-label">최저:</span>
+                <span class="monthly-stat-value negative">${worstMonth.toFixed(2)}%</span>
+              </div>
+            </div>
+          </div>
+          <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+            <rect width="100%" height="100%" fill="#f8fafc"/>
+            ${gridLines}
+            ${bars}
+          </svg>
+        `;
+      })()}
     </div>
   </div>
 
