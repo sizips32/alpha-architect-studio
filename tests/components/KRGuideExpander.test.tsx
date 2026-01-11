@@ -87,8 +87,126 @@ describe('KRGuideExpander', () => {
     const presetButton = screen.getByText(/모멘텀 기본/);
     fireEvent.click(presetButton);
 
-    expect(defaultProps.onApplyPreset).toHaveBeenCalled();
-    expect(defaultProps.onRun).toHaveBeenCalled();
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith(
+      'rank(close / delay(close, 20)) - rank(volume)'
+    );
+    expect(defaultProps.onRun).toHaveBeenCalledWith(
+      'rank(close / delay(close, 20)) - rank(volume)'
+    );
+  });
+
+  it('should apply 단기 과매수 회피 preset correctly', () => {
+    render(<KRGuideExpander {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/단기 과매수 회피/));
+
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith(
+      'rank(returns, 20) - Ts_rank(volume, 5)'
+    );
+    expect(defaultProps.onRun).toHaveBeenCalledWith('rank(returns, 20) - Ts_rank(volume, 5)');
+  });
+
+  it('should apply 밸류+퀄리티 혼합 preset correctly', () => {
+    render(<KRGuideExpander {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/밸류\+퀄리티 혼합/));
+
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith('z(revenue) + z(ebitda) + z(1/price)');
+    expect(defaultProps.onRun).toHaveBeenCalledWith('z(revenue) + z(ebitda) + z(1/price)');
+  });
+
+  it('should apply 기본 예시 preset correctly', () => {
+    render(<KRGuideExpander {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/기본 예시:/));
+
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith('rank(close) - rank(volume)');
+    expect(defaultProps.onRun).toHaveBeenCalledWith('rank(close) - rank(volume)');
+  });
+
+  it('should apply 설명용 예시 preset correctly', () => {
+    render(<KRGuideExpander {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/설명용 예시:/));
+
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith(
+      'Ts_rank(close/delay(close,1), 10) - Ts_rank(volume, 10)'
+    );
+    expect(defaultProps.onRun).toHaveBeenCalledWith(
+      'Ts_rank(close/delay(close,1), 10) - Ts_rank(volume, 10)'
+    );
+  });
+
+  it('should apply 모멘텀×변동성 preset correctly', () => {
+    render(<KRGuideExpander {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/모멘텀×변동성/));
+
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith(
+      'rank(close / delay(close, 60)) / (1 + stddev(returns, 20))'
+    );
+    expect(defaultProps.onRun).toHaveBeenCalledWith(
+      'rank(close / delay(close, 60)) / (1 + stddev(returns, 20))'
+    );
+  });
+
+  it('should apply 밸류-볼 감쇠 preset correctly', () => {
+    render(<KRGuideExpander {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/밸류-볼 감쇠/));
+
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith(
+      'rank(1/price) + z(revenue) - z(stddev(returns, 60))'
+    );
+    expect(defaultProps.onRun).toHaveBeenCalledWith(
+      'rank(1/price) + z(revenue) - z(stddev(returns, 60))'
+    );
+  });
+
+  it('should apply 수급·리스크 혼합 preset correctly', () => {
+    render(<KRGuideExpander {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/수급·리스크 혼합/));
+
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith(
+      'correlation(returns, volume, 20) - Ts_rank(stddev(returns, 20), 60)'
+    );
+    expect(defaultProps.onRun).toHaveBeenCalledWith(
+      'correlation(returns, volume, 20) - Ts_rank(stddev(returns, 20), 60)'
+    );
+  });
+
+  it('should apply IC 예측용 피처 예시 preset correctly', () => {
+    render(<KRGuideExpander {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/IC 예측용 피처 예시/));
+
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith(
+      'rank(returns, 60) - rank(stddev(returns, 20))'
+    );
+    expect(defaultProps.onRun).toHaveBeenCalledWith(
+      'rank(returns, 60) - rank(stddev(returns, 20))'
+    );
+  });
+
+  it('should apply 소프트맥스 가중 컨셉 preset correctly', () => {
+    render(<KRGuideExpander {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText(/소프트맥스 가중 컨셉/));
+
+    expect(defaultProps.onApplyPreset).toHaveBeenCalledWith(
+      'softmax(rank(returns,20), tau=0.5) / vol'
+    );
+    expect(defaultProps.onRun).toHaveBeenCalledWith('softmax(rank(returns,20), tau=0.5) / vol');
   });
 
   it('should render intermediate level presets', () => {
