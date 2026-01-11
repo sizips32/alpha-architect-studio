@@ -288,6 +288,80 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
       color: #374151;
     }
 
+    .sector-stats {
+      margin: 20px 0;
+    }
+
+    .sector-stats-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+
+    .sector-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .sector-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .sector-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .sector-name {
+      font-weight: 600;
+      color: #0369a1;
+      background: #e0f2fe;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .sector-trade-count {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .sector-stats-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 3px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .sector-stats-row:last-child {
+      border-bottom: none;
+    }
+
+    .sector-stats-label {
+      color: #6b7280;
+    }
+
+    .sector-stats-value {
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .sector-stats-value.positive {
+      color: #10b981;
+    }
+
+    .sector-stats-value.negative {
+      color: #ef4444;
+    }
+
     .chart-container {
       text-align: center;
       margin: 20px 0;
@@ -426,6 +500,59 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
         <div class="value ${trades.reduce((sum, t) => sum + (t.pnl || 0), 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">${trades.reduce((sum, t) => sum + (t.pnl || 0), 0).toLocaleString()}원</div>
       </div>
     </div>
+
+    <div class="sector-stats">
+      <div class="sector-stats-title">섹터별 거래 통계</div>
+      <div class="sector-stats-grid">
+        ${(() => {
+          const sectorMap = new Map<
+            string,
+            { trades: number; buys: number; sells: number; totalAmount: number; totalPnl: number }
+          >();
+          trades.forEach((t) => {
+            const existing = sectorMap.get(t.sector) || {
+              trades: 0,
+              buys: 0,
+              sells: 0,
+              totalAmount: 0,
+              totalPnl: 0,
+            };
+            existing.trades++;
+            if (t.action === 'BUY') existing.buys++;
+            else existing.sells++;
+            existing.totalAmount += t.amount;
+            existing.totalPnl += t.pnl || 0;
+            sectorMap.set(t.sector, existing);
+          });
+          return Array.from(sectorMap.entries())
+            .sort((a, b) => b[1].trades - a[1].trades)
+            .map(
+              ([sector, stats]) => `
+              <div class="sector-card">
+                <div class="sector-card-header">
+                  <span class="sector-name">${sector}</span>
+                  <span class="sector-trade-count">${stats.trades}건</span>
+                </div>
+                <div class="sector-stats-row">
+                  <span class="sector-stats-label">매수/매도</span>
+                  <span class="sector-stats-value">${stats.buys}건 / ${stats.sells}건</span>
+                </div>
+                <div class="sector-stats-row">
+                  <span class="sector-stats-label">거래금액</span>
+                  <span class="sector-stats-value">${stats.totalAmount.toLocaleString()}</span>
+                </div>
+                <div class="sector-stats-row">
+                  <span class="sector-stats-label">실현손익</span>
+                  <span class="sector-stats-value ${stats.totalPnl >= 0 ? 'positive' : 'negative'}">${stats.totalPnl >= 0 ? '+' : ''}${stats.totalPnl.toLocaleString()}</span>
+                </div>
+              </div>
+            `
+            )
+            .join('');
+        })()}
+      </div>
+    </div>
+
     <table class="trade-table">
       <thead>
         <tr>
