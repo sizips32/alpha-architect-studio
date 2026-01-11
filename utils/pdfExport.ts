@@ -431,6 +431,7 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
         <tr>
           <th>날짜</th>
           <th>종목</th>
+          <th>섹터</th>
           <th>구분</th>
           <th class="amount">수량</th>
           <th class="amount">단가</th>
@@ -445,6 +446,7 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
           <tr>
             <td>${trade.date}</td>
             <td>${trade.name} <span style="color:#9ca3af;font-size:10px;">(${trade.symbol})</span></td>
+            <td><span style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:10px;">${trade.sector}</span></td>
             <td class="${trade.action === 'BUY' ? 'buy' : 'sell'}">${trade.action === 'BUY' ? '매수' : '매도'}</td>
             <td class="amount">${trade.quantity.toLocaleString()}</td>
             <td class="amount">${trade.price.toLocaleString()}</td>

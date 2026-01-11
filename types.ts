@@ -40,6 +40,7 @@ export interface Trade {
   date: string;
   symbol: string;
   name: string;
+  sector: string;
   action: 'BUY' | 'SELL';
   quantity: number;
   price: number;
