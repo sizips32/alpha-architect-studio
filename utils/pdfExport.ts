@@ -11,7 +11,7 @@ interface ExportOptions {
  * Uses browser's print functionality for PDF generation
  */
 export function exportToPdf({ results, expression, config }: ExportOptions): void {
-  const { kpis, pnlData, benchmark } = results;
+  const { kpis, pnlData, benchmark, trades } = results;
 
   // Calculate additional statistics
   const startValue = pnlData[0]?.value ?? 1000;
@@ -214,6 +214,80 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
       color: #6b7280;
     }
 
+    .trade-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .trade-table th,
+    .trade-table td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .trade-table th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .trade-table tr:hover {
+      background: #f9fafb;
+    }
+
+    .trade-table .buy {
+      color: #dc2626;
+      font-weight: 600;
+    }
+
+    .trade-table .sell {
+      color: #2563eb;
+      font-weight: 600;
+    }
+
+    .trade-table .pnl-positive {
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .trade-table .pnl-negative {
+      color: #ef4444;
+      font-weight: 600;
+    }
+
+    .trade-table .amount {
+      text-align: right;
+    }
+
+    .trade-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .trade-summary-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .trade-summary-item .label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    .trade-summary-item .value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #374151;
+    }
+
     .chart-container {
       text-align: center;
       margin: 20px 0;
@@ -328,6 +402,64 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
       ${chartSvg}
     </div>
   </div>
+
+  ${
+    trades && trades.length > 0
+      ? `
+  <div class="section">
+    <h2 class="section-title">거래 내역</h2>
+    <div class="trade-summary">
+      <div class="trade-summary-item">
+        <div class="label">총 거래 수</div>
+        <div class="value">${trades.length}건</div>
+      </div>
+      <div class="trade-summary-item">
+        <div class="label">매수 거래</div>
+        <div class="value">${trades.filter((t) => t.action === 'BUY').length}건</div>
+      </div>
+      <div class="trade-summary-item">
+        <div class="label">매도 거래</div>
+        <div class="value">${trades.filter((t) => t.action === 'SELL').length}건</div>
+      </div>
+      <div class="trade-summary-item">
+        <div class="label">실현 손익</div>
+        <div class="value ${trades.reduce((sum, t) => sum + (t.pnl || 0), 0) >= 0 ? 'pnl-positive' : 'pnl-negative'}">${trades.reduce((sum, t) => sum + (t.pnl || 0), 0).toLocaleString()}원</div>
+      </div>
+    </div>
+    <table class="trade-table">
+      <thead>
+        <tr>
+          <th>날짜</th>
+          <th>종목</th>
+          <th>구분</th>
+          <th class="amount">수량</th>
+          <th class="amount">단가</th>
+          <th class="amount">거래금액</th>
+          <th class="amount">손익</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${trades
+          .map(
+            (trade) => `
+          <tr>
+            <td>${trade.date}</td>
+            <td>${trade.name} <span style="color:#9ca3af;font-size:10px;">(${trade.symbol})</span></td>
+            <td class="${trade.action === 'BUY' ? 'buy' : 'sell'}">${trade.action === 'BUY' ? '매수' : '매도'}</td>
+            <td class="amount">${trade.quantity.toLocaleString()}</td>
+            <td class="amount">${trade.price.toLocaleString()}</td>
+            <td class="amount">${trade.amount.toLocaleString()}</td>
+            <td class="amount ${trade.pnl ? (trade.pnl >= 0 ? 'pnl-positive' : 'pnl-negative') : ''}">${trade.pnl ? (trade.pnl >= 0 ? '+' : '') + trade.pnl.toLocaleString() : '-'}</td>
+          </tr>
+        `
+          )
+          .join('')}
+      </tbody>
+    </table>
+  </div>
+  `
+      : ''
+  }
 
   <div class="section">
     <h2 class="section-title">시뮬레이션 설정</h2>

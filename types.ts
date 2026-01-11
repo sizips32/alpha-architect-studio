@@ -36,10 +36,23 @@ export interface BenchmarkData {
   return: number;
 }
 
+export interface Trade {
+  date: string;
+  symbol: string;
+  name: string;
+  action: 'BUY' | 'SELL';
+  quantity: number;
+  price: number;
+  amount: number;
+  pnl?: number;
+  pnlPercent?: number;
+}
+
 export interface BacktestResults {
   kpis: Kpis;
   pnlData: PnlDataPoint[];
   benchmark?: BenchmarkData;
+  trades?: Trade[];
 }
 
 export interface HistoricalData {

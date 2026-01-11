@@ -130,6 +130,69 @@ const server = http.createServer(async (req, res) => {
         100;
       const alpha = portfolioReturn - benchmarkReturn;
 
+      // Generate mock trade history
+      const isKorean = config?.universe?.includes('KR') || config?.region === 'KR';
+      const stockPool = isKorean
+        ? [
+            { symbol: '005930.KS', name: '삼성전자' },
+            { symbol: '000660.KS', name: 'SK하이닉스' },
+            { symbol: '035420.KS', name: 'NAVER' },
+            { symbol: '005380.KS', name: '현대자동차' },
+            { symbol: '051910.KS', name: 'LG화학' },
+            { symbol: '006400.KS', name: '삼성SDI' },
+            { symbol: '035720.KS', name: '카카오' },
+            { symbol: '003670.KS', name: '포스코퓨처엠' },
+            { symbol: '105560.KS', name: 'KB금융' },
+            { symbol: '055550.KS', name: '신한지주' },
+          ]
+        : [
+            { symbol: 'AAPL', name: 'Apple Inc.' },
+            { symbol: 'MSFT', name: 'Microsoft Corp.' },
+            { symbol: 'GOOGL', name: 'Alphabet Inc.' },
+            { symbol: 'AMZN', name: 'Amazon.com Inc.' },
+            { symbol: 'NVDA', name: 'NVIDIA Corp.' },
+            { symbol: 'META', name: 'Meta Platforms' },
+            { symbol: 'TSLA', name: 'Tesla Inc.' },
+            { symbol: 'JPM', name: 'JPMorgan Chase' },
+            { symbol: 'V', name: 'Visa Inc.' },
+            { symbol: 'JNJ', name: 'Johnson & Johnson' },
+          ];
+
+      // Generate 20 sample trades
+      const trades = [];
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 252);
+
+      for (let i = 0; i < 20; i++) {
+        const tradeDate = new Date(startDate);
+        tradeDate.setDate(tradeDate.getDate() + Math.floor(Math.random() * 252));
+        const stock = stockPool[Math.floor(Math.random() * stockPool.length)];
+        const action = Math.random() > 0.5 ? 'BUY' : 'SELL';
+        const quantity = Math.floor(Math.random() * 100 + 10) * 10;
+        const price = isKorean
+          ? Math.floor(Math.random() * 200000 + 50000)
+          : Number((Math.random() * 300 + 50).toFixed(2));
+        const amount = quantity * price;
+        const pnl =
+          action === 'SELL' ? Number((Math.random() * 2000000 - 500000).toFixed(0)) : undefined;
+        const pnlPercent = pnl ? Number(((pnl / amount) * 100).toFixed(2)) : undefined;
+
+        trades.push({
+          date: tradeDate.toISOString().split('T')[0],
+          symbol: stock.symbol,
+          name: stock.name,
+          action,
+          quantity,
+          price,
+          amount,
+          pnl,
+          pnlPercent,
+        });
+      }
+
+      // Sort trades by date
+      trades.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
       const mockResults = {
         input: {
           expression: usedExpr,
@@ -150,6 +213,7 @@ const server = http.createServer(async (req, res) => {
           data: benchmarkData,
           return: Number(benchmarkReturn.toFixed(3)),
         },
+        trades,
       };
 
       return sendJson(res, 200, mockResults);
