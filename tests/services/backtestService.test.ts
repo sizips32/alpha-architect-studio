@@ -228,5 +228,257 @@ describe('backtestService', () => {
       expect(result.trades?.[0].sector).toBe('Technology');
       expect(result.trades?.[0].action).toBe('BUY');
     });
+
+    it('should use statusText as fallback when error message is missing', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        json: async () => ({}), // No error property
+      });
+
+      // Falls back to mock data
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+      expect(result.pnlData).toBeDefined();
+    });
+
+    it('should handle json parse failure in error response', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: async () => {
+          throw new Error('JSON parse failed');
+        },
+      });
+
+      // Falls back to mock data
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+      expect(result.pnlData).toBeDefined();
+    });
+
+    it('should handle non-Error exception in catch block', async () => {
+      (global.fetch as any).mockRejectedValueOnce('string error');
+
+      // Falls back to mock data
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+      expect(result.pnlData).toBeDefined();
+    });
+
+    it('should handle null rejection', async () => {
+      (global.fetch as any).mockRejectedValueOnce(null);
+
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+      expect(result.pnlData).toBeDefined();
+    });
+
+    it('should handle undefined rejection', async () => {
+      (global.fetch as any).mockRejectedValueOnce(undefined);
+
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+      expect(result.pnlData).toBeDefined();
+    });
+
+    it('should generate mock data with valid structure', async () => {
+      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await simulateBacktest('rank(close, 20)');
+
+      // Verify mock data structure
+      expect(typeof result.kpis.ir).toBe('number');
+      expect(typeof result.kpis.annualReturn).toBe('number');
+      expect(typeof result.kpis.maxDrawdown).toBe('number');
+      expect(result.kpis.maxDrawdown).toBeLessThan(0); // Should be negative
+      expect(typeof result.kpis.turnover).toBe('number');
+      expect(typeof result.kpis.margin).toBe('number');
+      expect(typeof result.kpis.correlation).toBe('number');
+      expect(Array.isArray(result.pnlData)).toBe(true);
+      expect(result.pnlData.length).toBe(252); // 252 trading days
+    });
+
+    it('should generate mock pnlData with date and pnl properties', async () => {
+      (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await simulateBacktest('rank(close, 20)');
+
+      // Check pnlData structure
+      expect(result.pnlData[0]).toHaveProperty('date');
+      expect(result.pnlData[0]).toHaveProperty('pnl');
+      expect(typeof result.pnlData[0].date).toBe('string');
+      expect(typeof result.pnlData[0].pnl).toBe('number');
+    });
+
+    it('should handle response with missing pnlData', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          kpis: {
+            ir: 1.0,
+            annualReturn: 0.1,
+            maxDrawdown: -0.05,
+            turnover: 0.1,
+            margin: 0.001,
+            correlation: 0.1,
+          },
+          // pnlData is missing
+        }),
+      });
+
+      // Falls back to mock data
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.pnlData).toBeDefined();
+      expect(Array.isArray(result.pnlData)).toBe(true);
+    });
+
+    it('should handle response with missing kpis', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          pnlData: [{ day: 1, value: 1000 }],
+          // kpis is missing
+        }),
+      });
+
+      // Falls back to mock data
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+      expect(result.kpis.ir).toBeDefined();
+    });
+
+    it('should handle whitespace-padded expression', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSuccessResponse,
+      });
+
+      const result = await simulateBacktest('  rank(close, 20)  ', mockConfig);
+
+      expect(result).toEqual(mockSuccessResponse);
+    });
+
+    it('should handle complex expression', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSuccessResponse,
+      });
+
+      const complexExpression = 'rank(close / delay(close, 20)) - rank(volume) + z(revenue)';
+      const result = await simulateBacktest(complexExpression);
+
+      expect(result).toEqual(mockSuccessResponse);
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      const requestBody = JSON.parse(fetchCall[1].body);
+      expect(requestBody.expression).toBe(complexExpression);
+    });
+
+    it('should handle special characters in expression', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSuccessResponse,
+      });
+
+      const expression = 'rank(close, 20) + (1/price) * 100';
+      await simulateBacktest(expression);
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      const requestBody = JSON.parse(fetchCall[1].body);
+      expect(requestBody.expression).toBe(expression);
+    });
+
+    it('should handle partial config', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSuccessResponse,
+      });
+
+      const partialConfig = { universe: 'TOP_500' };
+      await simulateBacktest('rank(close, 20)', partialConfig);
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      const requestBody = JSON.parse(fetchCall[1].body);
+      expect(requestBody.config).toEqual(partialConfig);
+    });
+
+    it('should handle empty config object', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockSuccessResponse,
+      });
+
+      await simulateBacktest('rank(close, 20)', {});
+
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      const requestBody = JSON.parse(fetchCall[1].body);
+      expect(requestBody.config).toEqual({});
+    });
+
+    it('should handle 400 Bad Request response', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({ error: 'Invalid expression syntax' }),
+      });
+
+      const result = await simulateBacktest('invalid expression');
+
+      // Falls back to mock data
+      expect(result.kpis).toBeDefined();
+    });
+
+    it('should handle 401 Unauthorized response', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: async () => ({ error: 'Authentication required' }),
+      });
+
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+    });
+
+    it('should handle 429 Rate Limit response', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many Requests',
+        json: async () => ({ error: 'Rate limit exceeded' }),
+      });
+
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+    });
+
+    it('should handle timeout error', async () => {
+      (global.fetch as any).mockRejectedValueOnce(new Error('Request timeout'));
+
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+      expect(result.pnlData).toBeDefined();
+    });
+
+    it('should handle CORS error', async () => {
+      (global.fetch as any).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      const result = await simulateBacktest('rank(close, 20)');
+
+      expect(result.kpis).toBeDefined();
+    });
   });
 });
