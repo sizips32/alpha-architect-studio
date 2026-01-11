@@ -211,6 +211,31 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     }
   }, [results, expression, config]);
 
+  // Memoize KPI values - must be called before early returns to follow rules of hooks
+  const kpiValues = useMemo(() => {
+    if (!results) {
+      return {
+        ir: '0.00',
+        annualReturn: '0.00%',
+        maxDrawdown: '0.00%',
+        turnover: '0.00%',
+        margin: '0.00',
+        correlation: '0.00',
+        isAnnualReturnPositive: false,
+      };
+    }
+    const { kpis } = results;
+    return {
+      ir: kpis.ir.toFixed(2),
+      annualReturn: `${(kpis.annualReturn * 100).toFixed(2)}%`,
+      maxDrawdown: `${(kpis.maxDrawdown * 100).toFixed(2)}%`,
+      turnover: `${(kpis.turnover * 100).toFixed(2)}%`,
+      margin: (kpis.margin * 10000).toFixed(2),
+      correlation: kpis.correlation.toFixed(2),
+      isAnnualReturnPositive: kpis.annualReturn > 0,
+    };
+  }, [results]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-900/50 rounded-lg border border-gray-800">
@@ -245,21 +270,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     return <WalkthroughGuide />;
   }
 
-  const { kpis, pnlData, benchmark } = results;
-
-  // Memoize KPI values to prevent unnecessary recalculations
-  const kpiValues = useMemo(
-    () => ({
-      ir: kpis.ir.toFixed(2),
-      annualReturn: `${(kpis.annualReturn * 100).toFixed(2)}%`,
-      maxDrawdown: `${(kpis.maxDrawdown * 100).toFixed(2)}%`,
-      turnover: `${(kpis.turnover * 100).toFixed(2)}%`,
-      margin: (kpis.margin * 10000).toFixed(2),
-      correlation: kpis.correlation.toFixed(2),
-      isAnnualReturnPositive: kpis.annualReturn > 0,
-    }),
-    [kpis]
-  );
+  const { pnlData, benchmark } = results;
 
   return (
     <div className="space-y-6 lg:space-y-8">

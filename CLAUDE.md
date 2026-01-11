@@ -1,6 +1,6 @@
-# CLAUDE.md - Alpha Architect Studio
+# CLAUDE.md
 
-This file provides guidance for Claude Code when working on this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -76,39 +76,30 @@ alpha-architect-studio/
 ### Development
 
 ```bash
-# Start frontend dev server (port 5173)
-npm run dev
-
-# Start backend HTTP server (port 3555)
-npm run dev:server
-
-# Start both frontend and backend concurrently
-npm run dev:all
-
-# Build frontend
-npm run build
-
-# Build backend
-npm run build:server
+npm run dev          # Frontend dev server (port 3555)
+npm run dev:server   # Backend HTTP server only (port 8787)
+npm run dev:all      # Frontend + backend concurrently
+npm run build        # Frontend production build
+npm run build:server # Backend build (TypeScript compile)
 ```
 
-### Testing & Quality
+### Testing
 
 ```bash
-# Run tests
-npm test
+npm test                    # Run all tests (Vitest)
+npm test -- --run           # Run once without watch mode
+npm test -- path/to/file    # Run specific test file
+npm run test:coverage       # Run with coverage report
+npm run test:ui             # Vitest with browser UI
+```
 
-# Run tests with UI
-npm test:ui
+### Code Quality
 
-# Run linting
-npm run lint
-
-# Auto-fix lint issues
-npm run lint:fix
-
-# Format code
-npm run format
+```bash
+npm run lint         # ESLint check
+npm run lint:fix     # Auto-fix lint issues
+npm run format       # Prettier format
+npm run format:check # Check formatting only
 ```
 
 ### Backend Server (from mcp-server/)
@@ -204,13 +195,9 @@ res.setHeader('Access-Control-Allow-Origin', '*');
 
 ## Environment Variables
 
-Create `.env.local` in the root directory:
+Frontend connects to backend at `http://localhost:8787` by default (configurable via `VITE_API_URL`).
 
-```
-VITE_GEMINI_API_KEY=your_gemini_api_key
-```
-
-For the backend server (mcp-server/.env):
+For the backend server, create `mcp-server/.env`:
 
 ```
 GEMINI_API_KEY=your_gemini_api_key
@@ -220,7 +207,7 @@ GEMINI_API_KEY=your_gemini_api_key
 
 ### CORS Errors
 
-If you see CORS errors, ensure the backend server is running on port 3555.
+If you see CORS errors, ensure the backend server is running on port 8787.
 
 ### Yahoo Finance Rate Limiting
 
@@ -229,6 +216,10 @@ The market data service may hit rate limits. The ticker widget has built-in retr
 ### PDF Export Not Working
 
 PDF export uses `window.print()` - ensure pop-ups are allowed in the browser.
+
+### React Hooks Rules
+
+All hooks must be called before any early returns in components. See `ResultsDashboard.tsx` for the correct pattern when using `useMemo` with conditional rendering.
 
 ## Code Style Guidelines
 
@@ -242,12 +233,21 @@ PDF export uses `window.print()` - ensure pop-ups are allowed in the browser.
 
 ## Testing
 
-Tests use Vitest with React Testing Library:
+Tests use Vitest with React Testing Library. Mock browser APIs as needed:
 
 ```typescript
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+
+// Mock ResizeObserver for recharts components
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
 ```
+
+Test files are in `tests/` directory mirroring the source structure.
 
 ## Git Workflow
 
