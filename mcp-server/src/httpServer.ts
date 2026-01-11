@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// Load environment variables from .env file
+import 'dotenv/config';
+
 import http from 'http';
 import { parse } from 'url';
 import { z } from 'zod';
@@ -10,7 +13,7 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 8787;
 function sendJson(res: http.ServerResponse, status: number, data: unknown) {
     const body = JSON.stringify(data);
     res.writeHead(status, {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
@@ -110,16 +113,38 @@ const server = http.createServer(async (req, res) => {
             const chunks: Buffer[] = [];
             for await (const chunk of req) chunks.push(chunk as Buffer);
             const raw = Buffer.concat(chunks).toString('utf8');
-            const parsed = GenerateExpressionSchema.safeParse(raw ? JSON.parse(raw) : {});
+            
+            let requestData;
+            try {
+                requestData = raw ? JSON.parse(raw) : {};
+            } catch (parseError) {
+                return sendJson(res, 400, { error: 'invalid_json', message: 'Invalid JSON format' });
+            }
+            
+            const parsed = GenerateExpressionSchema.safeParse(requestData);
             if (!parsed.success) {
                 return sendJson(res, 400, { error: 'invalid_request', details: parsed.error.flatten() });
             }
+            
             const { idea } = parsed.data;
+            
+            // 한글 및 다양한 언어 지원을 위한 유효성 검사
+            if (!idea || typeof idea !== 'string' || idea.trim().length === 0) {
+                return sendJson(res, 400, { error: 'invalid_idea', message: 'Idea cannot be empty' });
+            }
+            
             const expression = await generateAlphaExpression(idea);
+            
+            // 응답 검증
+            if (!expression || typeof expression !== 'string' || expression.trim().length === 0) {
+                return sendJson(res, 500, { error: 'empty_expression', message: 'Generated expression is empty' });
+            }
+            
             return sendJson(res, 200, { expression });
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Internal Server Error';
-            return sendJson(res, 500, { error: message });
+            console.error('Error in generate_alpha_expression:', err);
+            return sendJson(res, 500, { error: 'server_error', message });
         }
     }
 

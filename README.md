@@ -19,21 +19,48 @@ AI 기반 퀀트 전략 개발 스튜디오입니다. 자연어로 된 트레이
 
 1. 의존성 설치:
    ```bash
+   # 루트 디렉토리에서
    npm install
+   
+   # MCP 서버 디렉토리에서
+   cd mcp-server
+   npm install
+   cd ..
    ```
 
 2. Gemini API 키 설정:
    ```bash
-   # .env.local 파일 생성 후 GEMINI_API_KEY 설정
-   echo "GEMINI_API_KEY=your_api_key_here" > .env.local
+   # mcp-server/.env 파일 생성 후 GEMINI_API_KEY 설정
+   cd mcp-server
+   echo "GEMINI_API_KEY=your_api_key_here" > .env
+   cd ..
    ```
 
-3. 개발 서버 실행:
+3. 백엔드 서버 빌드 및 실행:
    ```bash
+   # 백엔드 서버 빌드
+   cd mcp-server
+   npm run build
+   
+   # 백엔드 서버 실행 (별도 터미널)
+   npm run start:http
+   # 또는 개발 모드로 실행 (자동 재시작)
+   npm run dev:http
+   ```
+   
+   백엔드 서버는 `http://localhost:8787`에서 실행됩니다.
+
+4. 프론트엔드 개발 서버 실행:
+   ```bash
+   # 루트 디렉토리에서 (새 터미널)
    npm run dev
    ```
 
-4. 브라우저에서 `http://localhost:5173` 접속
+5. 브라우저에서 `http://localhost:3555` 접속
+
+**참고:** 프론트엔드와 백엔드를 함께 실행하려면 두 개의 터미널이 필요합니다:
+- 터미널 1: 백엔드 서버 (`cd mcp-server && npm run dev:http`)
+- 터미널 2: 프론트엔드 서버 (`npm run dev`)
 
 ## 🤖 Claude Desktop 연동 (MCP 서버)
 

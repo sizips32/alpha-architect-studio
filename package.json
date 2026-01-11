@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:all": "concurrently \"npm run dev:server\" \"npm run dev\"",
+    "dev:server": "cd mcp-server && npm run dev:http",
     "build": "vite build",
+    "build:server": "cd mcp-server && npm run build",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
