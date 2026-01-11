@@ -15,13 +15,47 @@ AI 기반 퀀트 전략 개발 스튜디오입니다. 자연어로 된 트레이
 
 ## 📱 웹 앱 실행
 
-**사전 요구사항:** Node.js
+**사전 요구사항:** Node.js v18 이상
+
+### 🚀 빠른 시작 (start.sh)
+
+```bash
+# 실행 권한 부여 (최초 1회)
+chmod +x start.sh
+
+# 전체 서버 시작 (프론트엔드 + 백엔드)
+./start.sh
+```
+
+시작 스크립트가 자동으로:
+
+- Node.js 및 npm 버전 확인
+- 환경 변수 파일 설정 (Gemini API 키)
+- 의존성 설치
+- 백엔드 서버 빌드 및 실행 (http://localhost:8787)
+- 프론트엔드 서버 실행 (http://localhost:3555)
+
+**start.sh 옵션:**
+
+```bash
+./start.sh --help          # 도움말 표시
+./start.sh --build-only    # 의존성 설치 및 빌드만 수행 (서버 시작 안함)
+./start.sh --backend-only  # 백엔드 서버만 시작
+./start.sh --frontend-only # 프론트엔드 서버만 시작
+```
+
+**종료:** `Ctrl+C`를 누르면 모든 서버가 정상 종료됩니다.
+
+---
+
+### 수동 설치 및 실행
 
 1. 의존성 설치:
+
    ```bash
    # 루트 디렉토리에서
    npm install
-   
+
    # MCP 서버 디렉토리에서
    cd mcp-server
    npm install
@@ -29,6 +63,7 @@ AI 기반 퀀트 전략 개발 스튜디오입니다. 자연어로 된 트레이
    ```
 
 2. Gemini API 키 설정:
+
    ```bash
    # mcp-server/.env 파일 생성 후 GEMINI_API_KEY 설정
    cd mcp-server
@@ -37,20 +72,22 @@ AI 기반 퀀트 전략 개발 스튜디오입니다. 자연어로 된 트레이
    ```
 
 3. 백엔드 서버 빌드 및 실행:
+
    ```bash
    # 백엔드 서버 빌드
    cd mcp-server
    npm run build
-   
+
    # 백엔드 서버 실행 (별도 터미널)
    npm run start:http
    # 또는 개발 모드로 실행 (자동 재시작)
    npm run dev:http
    ```
-   
+
    백엔드 서버는 `http://localhost:8787`에서 실행됩니다.
 
 4. 프론트엔드 개발 서버 실행:
+
    ```bash
    # 루트 디렉토리에서 (새 터미널)
    npm run dev
@@ -59,6 +96,7 @@ AI 기반 퀀트 전략 개발 스튜디오입니다. 자연어로 된 트레이
 5. 브라우저에서 `http://localhost:3555` 접속
 
 **참고:** 프론트엔드와 백엔드를 함께 실행하려면 두 개의 터미널이 필요합니다:
+
 - 터미널 1: 백엔드 서버 (`cd mcp-server && npm run dev:http`)
 - 터미널 2: 프론트엔드 서버 (`npm run dev`)
 
@@ -69,12 +107,14 @@ Claude Desktop에서 직접 alpha-architect-studio의 기능을 사용할 수 �
 ### 설치 방법
 
 1. MCP 서버 설치:
+
    ```bash
    cd mcp-server
    ./install.sh
    ```
 
 2. Claude Desktop 설정 파일에 추가:
+
    ```json
    {
      "mcpServers": {
@@ -96,9 +136,11 @@ Claude Desktop에서 직접 alpha-architect-studio의 기능을 사용할 수 �
 ## 🎯 사용 예시
 
 ### 웹 앱에서
+
 - "모멘텀 전략으로 지난 한 달간 수익률이 높은 주식을 사는 아이디어"를 입력하면 AI가 `rank(returns, 20)` 같은 alpha 표현식을 생성합니다.
 
 ### Claude Desktop에서
+
 - "AAPL 주식 데이터를 가져와줘"
 - "Ts_rank(close, 10) - Ts_rank(volume, 10) 이 표현식을 설명해줘"
 - "rank(returns, 20) 전략으로 백테스트를 실행해줘"
@@ -106,12 +148,14 @@ Claude Desktop에서 직접 alpha-architect-studio의 기능을 사용할 수 �
 ## 📊 Alpha 표현식 문법
 
 ### 데이터 필드
+
 - `open`, `high`, `low`, `close`: OHLC 가격
 - `volume`: 거래량
 - `returns`: 일일 수익률
 - `cap`: 시가총액
 
 ### 함수
+
 - `rank(x)`: 횡단면 순위
 - `delay(x, d)`: d일 전 값
 - `Ts_rank(x, d)`: d일간 시계열 순위
