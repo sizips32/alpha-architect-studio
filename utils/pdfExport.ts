@@ -452,6 +452,36 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
       color: #ef4444;
     }
 
+    .drawdown-chart-container {
+      margin: 20px 0;
+    }
+
+    .drawdown-stats {
+      display: flex;
+      gap: 25px;
+      margin-bottom: 15px;
+      font-size: 12px;
+    }
+
+    .drawdown-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .drawdown-stat-label {
+      color: #6b7280;
+    }
+
+    .drawdown-stat-value {
+      font-weight: 600;
+      color: #ef4444;
+    }
+
+    .drawdown-stat-value.neutral {
+      color: #374151;
+    }
+
     .chart-container {
       text-align: center;
       margin: 20px 0;
@@ -667,6 +697,124 @@ export function exportToPdf({ results, expression, config }: ExportOptions): voi
             <rect width="100%" height="100%" fill="#f8fafc"/>
             ${gridLines}
             ${bars}
+          </svg>
+        `;
+      })()}
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">낙폭 (Drawdown)</h2>
+    <div class="drawdown-chart-container">
+      ${(() => {
+        // Calculate drawdown from PnL data
+        let peak = pnlData[0].value;
+        const drawdownData = pnlData.map((d) => {
+          if (d.value > peak) peak = d.value;
+          const drawdown = ((d.value - peak) / peak) * 100;
+          return { day: d.day, drawdown };
+        });
+
+        // Chart dimensions
+        const width = 700;
+        const height = 160;
+        const padding = { top: 20, right: 20, bottom: 30, left: 50 };
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+
+        // Calculate scales
+        const minDrawdown = Math.min(...drawdownData.map((d) => d.drawdown));
+        const maxDrawdown = 0;
+        const drawdownRange = maxDrawdown - minDrawdown || 1;
+
+        // Generate area path
+        const areaPath = drawdownData
+          .map((d, i) => {
+            const x = padding.left + (i / (drawdownData.length - 1)) * chartWidth;
+            const y = padding.top + ((maxDrawdown - d.drawdown) / drawdownRange) * chartHeight;
+            return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+          })
+          .join(' ');
+
+        // Close the area path
+        const areaPathClosed = `${areaPath} L ${(padding.left + chartWidth).toFixed(1)} ${padding.top} L ${padding.left} ${padding.top} Z`;
+
+        // Generate line path
+        const linePath = areaPath;
+
+        // Grid lines
+        const gridValues = [
+          0,
+          minDrawdown / 4,
+          minDrawdown / 2,
+          (minDrawdown * 3) / 4,
+          minDrawdown,
+        ];
+        const gridLines = gridValues
+          .map((val) => {
+            const y = padding.top + ((maxDrawdown - val) / drawdownRange) * chartHeight;
+            return `
+              <line x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}" stroke="#e5e7eb" stroke-width="1"/>
+              <text x="${padding.left - 8}" y="${y.toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#6b7280">${val.toFixed(1)}%</text>
+            `;
+          })
+          .join('');
+
+        // Calculate stats
+        const maxDd = Math.min(...drawdownData.map((d) => d.drawdown));
+        const avgDd = drawdownData.reduce((sum, d) => sum + d.drawdown, 0) / drawdownData.length;
+        const maxDdDay = drawdownData.find((d) => d.drawdown === maxDd)?.day || 0;
+
+        // Find recovery periods
+        let inDrawdown = false;
+        let drawdownStart = 0;
+        let maxRecoveryDays = 0;
+        let currentRecoveryDays = 0;
+
+        drawdownData.forEach((d, i) => {
+          if (d.drawdown < -0.1 && !inDrawdown) {
+            inDrawdown = true;
+            drawdownStart = i;
+          } else if (d.drawdown >= -0.1 && inDrawdown) {
+            currentRecoveryDays = i - drawdownStart;
+            if (currentRecoveryDays > maxRecoveryDays) {
+              maxRecoveryDays = currentRecoveryDays;
+            }
+            inDrawdown = false;
+          }
+        });
+
+        return `
+          <div class="drawdown-stats">
+            <div class="drawdown-stat">
+              <span class="drawdown-stat-label">최대 낙폭:</span>
+              <span class="drawdown-stat-value">${maxDd.toFixed(2)}%</span>
+            </div>
+            <div class="drawdown-stat">
+              <span class="drawdown-stat-label">최대 낙폭 발생일:</span>
+              <span class="drawdown-stat-value neutral">Day ${maxDdDay}</span>
+            </div>
+            <div class="drawdown-stat">
+              <span class="drawdown-stat-label">평균 낙폭:</span>
+              <span class="drawdown-stat-value">${avgDd.toFixed(2)}%</span>
+            </div>
+            <div class="drawdown-stat">
+              <span class="drawdown-stat-label">최장 회복 기간:</span>
+              <span class="drawdown-stat-value neutral">${maxRecoveryDays}일</span>
+            </div>
+          </div>
+          <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+            <rect width="100%" height="100%" fill="#f8fafc"/>
+            ${gridLines}
+            <defs>
+              <linearGradient id="drawdownGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#fecaca;stop-opacity:0.3"/>
+                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:0.6"/>
+              </linearGradient>
+            </defs>
+            <path d="${areaPathClosed}" fill="url(#drawdownGradient)"/>
+            <path d="${linePath}" fill="none" stroke="#ef4444" stroke-width="2"/>
+            <line x1="${padding.left}" y1="${padding.top}" x2="${width - padding.right}" y2="${padding.top}" stroke="#374151" stroke-width="1.5"/>
           </svg>
         `;
       })()}
