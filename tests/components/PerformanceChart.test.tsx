@@ -1,14 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PerformanceChart } from '../../components/PerformanceChart';
 import type { PnlDataPoint, BenchmarkData } from '../../types';
-
-// Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
 
 describe('PerformanceChart', () => {
   const mockData: PnlDataPoint[] = [

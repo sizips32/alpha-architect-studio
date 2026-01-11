@@ -2,13 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MarketTicker } from '../../components/MarketTicker';
 
-// Mock ResizeObserver for recharts
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
-
 // Mock the market data service
 vi.mock('../../services/marketDataService', () => ({
   getMarketIndices: vi.fn().mockResolvedValue({

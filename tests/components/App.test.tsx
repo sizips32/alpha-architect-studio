@@ -2,13 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../../App';
 
-// Mock ResizeObserver for recharts
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
-
 // Mock the services
 vi.mock('../../services/geminiService', () => ({
   generateAlphaExpression: vi.fn().mockResolvedValue('rank(close, 10)'),

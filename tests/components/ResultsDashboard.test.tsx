@@ -3,13 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ResultsDashboard } from '../../components/ResultsDashboard';
 import type { BacktestResults, Config } from '../../types';
 
-// Mock ResizeObserver for recharts
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
-
 // Mock the export utilities
 vi.mock('../../utils/pdfExport', () => ({
   exportToPdf: vi.fn(),
