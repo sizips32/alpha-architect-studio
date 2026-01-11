@@ -14,6 +14,7 @@ const ConfigPanel = lazy(() => import('./components/ConfigPanel'));
 const ExpressionEditor = lazy(() => import('./components/ExpressionEditor'));
 const ResultsDashboard = lazy(() => import('./components/ResultsDashboard'));
 const DevelopmentCanvas = lazy(() => import('./components/DevelopmentCanvas'));
+const MarketTicker = lazy(() => import('./components/MarketTicker'));
 
 // Loading fallback component
 const LoadingFallback: React.FC<{ height?: string }> = ({ height = '200px' }) => (
@@ -109,9 +110,14 @@ const App: React.FC = () => {
           onApplyPreset={(expr) => setAlphaExpression(expr)}
           onRun={(expr) => runSimulation(expr)}
         />
-        <div className="lg:col-span-4 xl:col-span-3 bg-gray-900/50 rounded-lg border border-gray-800">
-          <Suspense fallback={<LoadingFallback height="400px" />}>
-            <ConfigPanel config={config} setConfig={setConfig} />
+        <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-6">
+          <div className="bg-gray-900/50 rounded-lg border border-gray-800">
+            <Suspense fallback={<LoadingFallback height="400px" />}>
+              <ConfigPanel config={config} setConfig={setConfig} />
+            </Suspense>
+          </div>
+          <Suspense fallback={<LoadingFallback height="300px" />}>
+            <MarketTicker />
           </Suspense>
         </div>
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col gap-6 lg:gap-8">
