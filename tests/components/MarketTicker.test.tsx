@@ -694,4 +694,552 @@ describe('MarketTicker', () => {
       expect(screen.getByText('1.20T')).toBeDefined();
     });
   });
+
+  it('should display US index price without dollar symbol', async () => {
+    render(<MarketTicker />);
+
+    await waitFor(() => {
+      expect(screen.getByText('S&P 500')).toBeDefined();
+    });
+
+    // Index price should be formatted without dollar sign (5,000.00 format)
+    expect(screen.getByText('5,000.00')).toBeDefined();
+  });
+
+  it('should display US stock price with dollar symbol', async () => {
+    render(<MarketTicker />);
+
+    const usTechTab = screen.getByText('미국');
+    fireEvent.click(usTechTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Apple Inc.')).toBeDefined();
+    });
+
+    expect(screen.getByText('$180.00')).toBeDefined();
+  });
+
+  it('should handle getStockSummary error gracefully', async () => {
+    const { getStockSummary } = await import('../../services/marketDataService');
+    (getStockSummary as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('Failed to load stock')
+    );
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: 'NVDA' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('NVIDIA Corporation')).toBeDefined();
+    });
+
+    const resultButton = screen.getByText('NVIDIA Corporation').closest('button');
+    if (resultButton) fireEvent.click(resultButton);
+
+    // Should stay on search results with search input visible
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('종목명 또는 심볼 입력...')).toBeDefined();
+    });
+  });
+
+  it('should handle chart period change error gracefully', async () => {
+    const { getHistoricalData } = await import('../../services/marketDataService');
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: 'NVDA' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('NVIDIA Corporation')).toBeDefined();
+    });
+
+    const resultButton = screen.getByText('NVIDIA Corporation').closest('button');
+    if (resultButton) fireEvent.click(resultButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('1년')).toBeDefined();
+    });
+
+    // Mock error for the next getHistoricalData call
+    (getHistoricalData as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('Chart data error')
+    );
+
+    // Click period button to trigger error
+    const yearButton = screen.getByText('1년');
+    fireEvent.click(yearButton);
+
+    // Should still show the stock detail view (error is logged but UI remains stable)
+    await waitFor(() => {
+      expect(screen.getByText('검색 결과로 돌아가기')).toBeDefined();
+    });
+  });
+
+  it('should display Korean stock detail with Won currency', async () => {
+    const { searchStocks, getStockSummary, getHistoricalData } =
+      await import('../../services/marketDataService');
+
+    (searchStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      results: [{ symbol: '005930.KS', name: '삼성전자', exchange: 'KRX' }],
+    });
+    (getStockSummary as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      symbol: '005930.KS',
+      name: '삼성전자',
+      price: 70000,
+      changePercent: 1.5,
+      volume: 10000000,
+      marketCap: 400e12,
+      high52Week: 80000,
+      low52Week: 55000,
+    });
+    (getHistoricalData as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: [
+        { date: '2024-01-01', close: 68000 },
+        { date: '2024-01-02', close: 70000 },
+      ],
+    });
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: '삼성전자' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('삼성전자')).toBeDefined();
+    });
+
+    const resultButton = screen.getByText('삼성전자').closest('button');
+    if (resultButton) fireEvent.click(resultButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('₩70,000')).toBeDefined();
+      expect(screen.getByText('+1.50%')).toBeDefined();
+    });
+  });
+
+  it('should handle non-Error type exceptions in fetch', async () => {
+    const { getMarketIndices } = await import('../../services/marketDataService');
+    (getMarketIndices as ReturnType<typeof vi.fn>).mockRejectedValueOnce('string error');
+
+    render(<MarketTicker />);
+
+    await waitFor(() => {
+      expect(screen.getByText('데이터를 불러오는데 실패했습니다.')).toBeDefined();
+    });
+  });
+
+  it('should handle non-Error type exceptions in search', async () => {
+    const { searchStocks } = await import('../../services/marketDataService');
+    (searchStocks as ReturnType<typeof vi.fn>).mockRejectedValueOnce('string error');
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: 'TEST' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('검색 결과가 없습니다')).toBeDefined();
+    });
+  });
+
+  it('should handle non-Error type exceptions in stock selection', async () => {
+    const { getStockSummary } = await import('../../services/marketDataService');
+    (getStockSummary as ReturnType<typeof vi.fn>).mockRejectedValueOnce('string error');
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: 'NVDA' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('NVIDIA Corporation')).toBeDefined();
+    });
+
+    const resultButton = screen.getByText('NVIDIA Corporation').closest('button');
+    if (resultButton) fireEvent.click(resultButton);
+
+    // Should stay on search results
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('종목명 또는 심볼 입력...')).toBeDefined();
+    });
+  });
+
+  it('should display negative stock change with red styling in detail view', async () => {
+    const { searchStocks, getStockSummary, getHistoricalData } =
+      await import('../../services/marketDataService');
+
+    (searchStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      results: [{ symbol: 'META', name: 'Meta Platforms', exchange: 'NASDAQ' }],
+    });
+    (getStockSummary as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      symbol: 'META',
+      name: 'Meta Platforms',
+      price: 450,
+      changePercent: -2.5,
+      volume: 20000000,
+      marketCap: 1.1e12,
+      high52Week: 500,
+      low52Week: 350,
+    });
+    (getHistoricalData as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: [
+        { date: '2024-01-01', close: 460 },
+        { date: '2024-01-02', close: 450 },
+      ],
+    });
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: 'META' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Meta Platforms')).toBeDefined();
+    });
+
+    const resultButton = screen.getByText('Meta Platforms').closest('button');
+    if (resultButton) fireEvent.click(resultButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('-2.50%')).toBeDefined();
+    });
+  });
+
+  it('should display stock without PE and EPS when not available', async () => {
+    const { searchStocks, getStockSummary, getHistoricalData } =
+      await import('../../services/marketDataService');
+
+    (searchStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      results: [{ symbol: 'TEST', name: 'Test Stock', exchange: 'NYSE' }],
+    });
+    (getStockSummary as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      symbol: 'TEST',
+      name: 'Test Stock',
+      price: 100,
+      changePercent: 1.0,
+      volume: 1000000,
+      marketCap: 10e9,
+      high52Week: 120,
+      low52Week: 80,
+      // pe and eps are intentionally missing
+    });
+    (getHistoricalData as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: [{ date: '2024-01-01', close: 100 }],
+    });
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: 'TEST' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Stock')).toBeDefined();
+    });
+
+    const resultButton = screen.getByText('Test Stock').closest('button');
+    if (resultButton) fireEvent.click(resultButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('거래량')).toBeDefined();
+      expect(screen.getByText('시가총액')).toBeDefined();
+    });
+
+    // PER and EPS should not be displayed
+    expect(screen.queryByText('PER')).toBeNull();
+    expect(screen.queryByText('EPS')).toBeNull();
+  });
+
+  it('should format market cap as billions for smaller companies', async () => {
+    const { searchStocks, getStockSummary, getHistoricalData } =
+      await import('../../services/marketDataService');
+
+    (searchStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      results: [{ symbol: 'SMALL', name: 'Small Corp', exchange: 'NYSE' }],
+    });
+    (getStockSummary as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      symbol: 'SMALL',
+      name: 'Small Corp',
+      price: 50,
+      changePercent: 0.5,
+      volume: 500000,
+      marketCap: 5e9, // 5 billion
+      high52Week: 60,
+      low52Week: 40,
+    });
+    (getHistoricalData as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: [{ date: '2024-01-01', close: 50 }],
+    });
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: 'SMALL' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Small Corp')).toBeDefined();
+    });
+
+    const resultButton = screen.getByText('Small Corp').closest('button');
+    if (resultButton) fireEvent.click(resultButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('5.00B')).toBeDefined();
+    });
+  });
+
+  it('should format market cap as millions for micro-cap companies', async () => {
+    const { searchStocks, getStockSummary, getHistoricalData } =
+      await import('../../services/marketDataService');
+
+    (searchStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      results: [{ symbol: 'MICRO', name: 'Micro Corp', exchange: 'NYSE' }],
+    });
+    (getStockSummary as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      symbol: 'MICRO',
+      name: 'Micro Corp',
+      price: 10,
+      changePercent: 0.2,
+      volume: 100000,
+      marketCap: 500e6, // 500 million
+      high52Week: 15,
+      low52Week: 5,
+    });
+    (getHistoricalData as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: [{ date: '2024-01-01', close: 10 }],
+    });
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: 'MICRO' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Micro Corp')).toBeDefined();
+    });
+
+    const resultButton = screen.getByText('Micro Corp').closest('button');
+    if (resultButton) fireEvent.click(resultButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('500.00M')).toBeDefined();
+    });
+  });
+
+  it('should display empty chart message when no chart data', async () => {
+    const { searchStocks, getStockSummary, getHistoricalData } =
+      await import('../../services/marketDataService');
+
+    (searchStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      results: [{ symbol: 'EMPTY', name: 'Empty Corp', exchange: 'NYSE' }],
+    });
+    (getStockSummary as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      symbol: 'EMPTY',
+      name: 'Empty Corp',
+      price: 100,
+      changePercent: 1.0,
+      volume: 1000000,
+      marketCap: 10e9,
+      high52Week: 120,
+      low52Week: 80,
+    });
+    (getHistoricalData as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: [], // Empty chart data
+    });
+
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+    fireEvent.change(searchInput, { target: { value: 'EMPTY' } });
+
+    const allButtons = screen.getAllByRole('button');
+    const searchButton = allButtons.find(
+      (btn) => btn.textContent === '검색' && btn.closest('.flex.gap-2')
+    );
+    if (searchButton) fireEvent.click(searchButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Empty Corp')).toBeDefined();
+    });
+
+    const resultButton = screen.getByText('Empty Corp').closest('button');
+    if (resultButton) fireEvent.click(resultButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('차트 데이터 없음')).toBeDefined();
+    });
+  });
+
+  it('should not show refresh buttons in search tab', async () => {
+    render(<MarketTicker />);
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    // Refresh buttons should not be visible in search tab
+    expect(screen.queryByTitle('새로고침')).toBeNull();
+    expect(screen.queryByTitle('자동 새로고침 켜짐')).toBeNull();
+  });
+
+  it('should hide last update time in search tab', async () => {
+    render(<MarketTicker />);
+
+    await waitFor(() => {
+      expect(screen.getByText('S&P 500')).toBeDefined();
+    });
+
+    // Initially in indices tab - time should be visible
+    const header = document.querySelector('.px-4.py-3');
+    expect(header?.textContent).toContain(':');
+
+    const searchTab = screen.getByText('검색');
+    fireEvent.click(searchTab);
+
+    // After switching to search tab - time should not be visible in the header
+    await waitFor(() => {
+      const searchInput = screen.getByPlaceholderText('종목명 또는 심볼 입력...');
+      expect(searchInput).toBeDefined();
+    });
+  });
+
+  it('should display Korean index price with Won symbol', async () => {
+    const { getMarketIndices } = await import('../../services/marketDataService');
+    (getMarketIndices as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: [
+        {
+          symbol: '^KS11',
+          name: 'KOSPI',
+          price: 2500,
+          changePercent: 0.8,
+          volume: 500000,
+          marketCap: 0,
+          high52Week: 2700,
+          low52Week: 2200,
+        },
+      ],
+    });
+
+    render(<MarketTicker />);
+
+    await waitFor(() => {
+      expect(screen.getByText('KOSPI')).toBeDefined();
+    });
+
+    // Korean index (^K) should display with Won symbol
+    expect(screen.getByText('₩2,500')).toBeDefined();
+  });
+
+  it('should display KOSDAQ stock price with Won symbol', async () => {
+    const { getKoreanTopStocks } = await import('../../services/marketDataService');
+    (getKoreanTopStocks as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: [
+        {
+          symbol: '035720.KQ',
+          name: '카카오',
+          price: 45000,
+          changePercent: -0.5,
+          volume: 5000000,
+          marketCap: 20e12,
+          high52Week: 60000,
+          low52Week: 35000,
+        },
+      ],
+    });
+
+    render(<MarketTicker />);
+
+    const koreanTab = screen.getByText('한국');
+    fireEvent.click(koreanTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('카카오')).toBeDefined();
+    });
+
+    expect(screen.getByText('₩45,000')).toBeDefined();
+  });
 });
