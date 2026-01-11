@@ -34,16 +34,30 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
  * @param onChange - Callback when the value changes
  * @param options - Array of option objects with value and label
  */
-const LabeledSelect: React.FC<{ label: string; tooltip: string; value: string; onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void; options: {value: string; label: string}[] }> = ({ label, tooltip, value, onChange, options }) => (
-    <div>
-        <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
-            {label}
-            <InfoTooltip text={tooltip} />
-        </label>
-        <select value={value} onChange={onChange} className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
-            {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-        </select>
-    </div>
+const LabeledSelect: React.FC<{
+  label: string;
+  tooltip: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: { value: string; label: string }[];
+}> = ({ label, tooltip, value, onChange, options }) => (
+  <div>
+    <label className="flex items-center text-sm font-medium text-gray-300 mb-2">
+      {label}
+      <InfoTooltip text={tooltip} />
+    </label>
+    <select
+      value={value}
+      onChange={onChange}
+      className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  </div>
 );
 
 /**
@@ -52,75 +66,75 @@ const LabeledSelect: React.FC<{ label: string; tooltip: string; value: string; o
  * - Triple-Axis Plan (TAP): Idea, Region, Performance Goal
  * - Alpha Parameters: Universe, Delay, Lookback, Max Stock Weight, Decay
  * - Risk & Neutralization: Neutralization method
- * 
+ *
  * @param config - Current configuration object
  * @param setConfig - Function to update the configuration
  */
 export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, setConfig }) => {
-  const handleChange = <K extends keyof Config,>(key: K, value: Config[K]) => {
-    setConfig(prev => ({ ...prev, [key]: value }));
+  const handleChange = <K extends keyof Config>(key: K, value: Config[K]) => {
+    setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
     <div className="flex flex-col">
       <div className="p-4 border-b border-gray-800">
-        <h2 className="text-lg font-bold text-gray-100">Configuration</h2>
-        <p className="text-sm text-gray-400">Adjust parameters to refine your alpha.</p>
+        <h2 className="text-lg font-bold text-gray-100">설정</h2>
+        <p className="text-sm text-gray-400">알파를 세밀하게 조정하세요.</p>
       </div>
-      
-      <Section title="Triple-Axis Plan (TAP)">
-        <LabeledSelect 
-            label="Idea & Dataset" 
-            tooltip="The core concept and data used for the alpha."
-            value={config.idea}
-            onChange={(e) => handleChange('idea', e.target.value)}
-            options={[
-                { value: 'Reversion', label: 'Reversion' },
-                { value: 'Momentum', label: 'Momentum' },
-                { value: 'Seasonality', label: 'Seasonality' },
-                { value: 'Value', label: 'Value' },
-                { value: 'ML_Signal', label: 'Machine Learning' },
-            ]}
+
+      <Section title="3축 계획 (TAP)">
+        <LabeledSelect
+          label="아이디어 & 데이터셋"
+          tooltip="알파의 핵심 개념과 사용 데이터입니다."
+          value={config.idea}
+          onChange={(e) => handleChange('idea', e.target.value)}
+          options={[
+            { value: 'Reversion', label: '평균회귀' },
+            { value: 'Momentum', label: '모멘텀' },
+            { value: 'Seasonality', label: '계절성' },
+            { value: 'Value', label: '가치투자' },
+            { value: 'ML_Signal', label: '머신러닝' },
+          ]}
         />
-        <LabeledSelect 
-            label="Region & Universe" 
-            tooltip="Geographic market and asset pool for the alpha."
-            value={config.region}
-            onChange={(e) => handleChange('region', e.target.value)}
-            options={[
-                { value: 'US', label: 'United States' },
-                { value: 'EU', label: 'Europe' },
-                { value: 'ASIA', label: 'Asia' },
-            ]}
+        <LabeledSelect
+          label="지역 & 유니버스"
+          tooltip="알파가 적용될 지리적 시장과 자산 풀입니다."
+          value={config.region}
+          onChange={(e) => handleChange('region', e.target.value)}
+          options={[
+            { value: 'US', label: '미국' },
+            { value: 'EU', label: '유럽' },
+            { value: 'ASIA', label: '아시아' },
+          ]}
         />
-        <LabeledSelect 
-            label="Performance Goal" 
-            tooltip="The primary metric to optimize for."
-            value={config.performanceGoal}
-            onChange={(e) => handleChange('performanceGoal', e.target.value)}
-            options={[
-                { value: 'High_IR', label: 'High Information Ratio' },
-                { value: 'High_Return', label: 'High Return' },
-                { value: 'Low_Drawdown', label: 'Low Drawdown' },
-                { value: 'Low_Turnover', label: 'Low Turnover' },
-            ]}
+        <LabeledSelect
+          label="성과 목표"
+          tooltip="최적화할 주요 지표입니다."
+          value={config.performanceGoal}
+          onChange={(e) => handleChange('performanceGoal', e.target.value)}
+          options={[
+            { value: 'High_IR', label: '높은 정보비율' },
+            { value: 'High_Return', label: '높은 수익률' },
+            { value: 'Low_Drawdown', label: '낮은 낙폭' },
+            { value: 'Low_Turnover', label: '낮은 턴오버' },
+          ]}
         />
       </Section>
-      
-      <Section title="Alpha Parameters">
-        <LabeledSelect 
-            label="Universe" 
-            tooltip={tooltips.universe}
-            value={config.universe}
-            onChange={(e) => handleChange('universe', e.target.value)}
-            options={[
-                { value: 'TOP_500', label: 'TOP 500' },
-                { value: 'TOP_1000', label: 'TOP 1000' },
-                { value: 'TOP_3000', label: 'TOP 3000' },
-            ]}
+
+      <Section title="알파 파라미터">
+        <LabeledSelect
+          label="유니버스"
+          tooltip={tooltips.universe}
+          value={config.universe}
+          onChange={(e) => handleChange('universe', e.target.value)}
+          options={[
+            { value: 'TOP_500', label: '상위 500' },
+            { value: 'TOP_1000', label: '상위 1000' },
+            { value: 'TOP_3000', label: '상위 3000' },
+          ]}
         />
-         <ParameterSlider
-          label="Delay (days)"
+        <ParameterSlider
+          label="지연 (일)"
           min={0}
           max={5}
           step={1}
@@ -129,7 +143,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, setConfig }) =
           tooltip={tooltips.delay}
         />
         <ParameterSlider
-          label="Lookback (days)"
+          label="룩백 기간 (일)"
           min={5}
           max={252}
           step={1}
@@ -138,7 +152,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, setConfig }) =
           tooltip={tooltips.lookbackDays}
         />
         <ParameterSlider
-          label="Max Stock Weight (%)"
+          label="최대 종목 비중 (%)"
           min={0.1}
           max={10}
           step={0.1}
@@ -147,7 +161,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, setConfig }) =
           tooltip={tooltips.maxStockWeight}
         />
         <ParameterSlider
-          label="Decay (days)"
+          label="감쇠 (일)"
           min={0}
           max={20}
           step={1}
@@ -157,20 +171,22 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, setConfig }) =
         />
       </Section>
 
-      <Section title="Risk & Neutralization">
-        <LabeledSelect 
-            label="Neutralization" 
-            tooltip={tooltips.neutralization}
-            value={config.neutralization}
-            onChange={(e) => handleChange('neutralization', e.target.value)}
-            options={[
-                { value: 'None', label: 'None' },
-                { value: 'Market', label: 'Market Neutral' },
-                { value: 'Industry', label: 'Industry Neutral' },
-                { value: 'Factor', label: 'Factor Neutral' },
-            ]}
+      <Section title="리스크 & 중립화">
+        <LabeledSelect
+          label="중립화"
+          tooltip={tooltips.neutralization}
+          value={config.neutralization}
+          onChange={(e) => handleChange('neutralization', e.target.value)}
+          options={[
+            { value: 'None', label: '없음' },
+            { value: 'Market', label: '시장 중립' },
+            { value: 'Industry', label: '산업 중립' },
+            { value: 'Factor', label: '팩터 중립' },
+          ]}
         />
       </Section>
     </div>
   );
 };
+
+export default ConfigPanel;
