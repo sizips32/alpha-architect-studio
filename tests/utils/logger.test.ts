@@ -272,4 +272,149 @@ describe('logger', () => {
       expect(consoleSpy.info).toHaveBeenCalledTimes(10);
     });
   });
+
+  describe('log level filtering', () => {
+    it('should filter logs below minLevel in production mode', () => {
+      // Access private minLevel to simulate production mode
+      const loggerAny = logger as any;
+      const originalMinLevel = loggerAny.minLevel;
+
+      // Set minLevel to WARN (production behavior)
+      loggerAny.minLevel = LogLevel.WARN;
+
+      // Clear previous calls
+      vi.clearAllMocks();
+
+      // DEBUG and INFO should be filtered out
+      logger.debug('Should not appear');
+      logger.info('Should not appear either');
+
+      expect(consoleSpy.debug).not.toHaveBeenCalled();
+      expect(consoleSpy.info).not.toHaveBeenCalled();
+
+      // WARN and ERROR should still log
+      logger.warn('Should appear');
+      logger.error('Should also appear');
+
+      expect(consoleSpy.warn).toHaveBeenCalledTimes(1);
+      expect(consoleSpy.error).toHaveBeenCalledTimes(1);
+
+      // Restore original minLevel
+      loggerAny.minLevel = originalMinLevel;
+    });
+
+    it('should filter logs at ERROR level only when minLevel is ERROR', () => {
+      const loggerAny = logger as any;
+      const originalMinLevel = loggerAny.minLevel;
+
+      // Set minLevel to ERROR
+      loggerAny.minLevel = LogLevel.ERROR;
+
+      vi.clearAllMocks();
+
+      // DEBUG, INFO, and WARN should be filtered out
+      logger.debug('Filtered');
+      logger.info('Filtered');
+      logger.warn('Filtered');
+
+      expect(consoleSpy.debug).not.toHaveBeenCalled();
+      expect(consoleSpy.info).not.toHaveBeenCalled();
+      expect(consoleSpy.warn).not.toHaveBeenCalled();
+
+      // Only ERROR should log
+      logger.error('Should appear');
+      expect(consoleSpy.error).toHaveBeenCalledTimes(1);
+
+      // Restore original minLevel
+      loggerAny.minLevel = originalMinLevel;
+    });
+
+    it('should log all levels when minLevel is DEBUG', () => {
+      const loggerAny = logger as any;
+      const originalMinLevel = loggerAny.minLevel;
+
+      // Ensure minLevel is DEBUG
+      loggerAny.minLevel = LogLevel.DEBUG;
+
+      vi.clearAllMocks();
+
+      logger.debug('Debug log');
+      logger.info('Info log');
+      logger.warn('Warn log');
+      logger.error('Error log');
+
+      expect(consoleSpy.debug).toHaveBeenCalledTimes(1);
+      expect(consoleSpy.info).toHaveBeenCalledTimes(1);
+      expect(consoleSpy.warn).toHaveBeenCalledTimes(1);
+      expect(consoleSpy.error).toHaveBeenCalledTimes(1);
+
+      // Restore original minLevel
+      loggerAny.minLevel = originalMinLevel;
+    });
+
+    it('should filter INFO when minLevel is INFO', () => {
+      const loggerAny = logger as any;
+      const originalMinLevel = loggerAny.minLevel;
+
+      // Set minLevel to INFO
+      loggerAny.minLevel = LogLevel.INFO;
+
+      vi.clearAllMocks();
+
+      // DEBUG should be filtered
+      logger.debug('Filtered debug');
+      expect(consoleSpy.debug).not.toHaveBeenCalled();
+
+      // INFO, WARN, ERROR should log
+      logger.info('Info log');
+      logger.warn('Warn log');
+      logger.error('Error log');
+
+      expect(consoleSpy.info).toHaveBeenCalledTimes(1);
+      expect(consoleSpy.warn).toHaveBeenCalledTimes(1);
+      expect(consoleSpy.error).toHaveBeenCalledTimes(1);
+
+      // Restore original minLevel
+      loggerAny.minLevel = originalMinLevel;
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle error without stack trace', () => {
+      const error = new Error('No stack');
+      // Remove stack trace
+      error.stack = undefined;
+
+      logger.error('Error without stack', error);
+
+      expect(consoleSpy.error).toHaveBeenCalled();
+      const logMessage = consoleSpy.error.mock.calls[0][0];
+      expect(logMessage).toContain('Error: No stack');
+    });
+
+    it('should handle context with undefined values', () => {
+      logger.info('Undefined in context', { defined: 'value', undef: undefined });
+
+      expect(consoleSpy.info).toHaveBeenCalled();
+      const logMessage = consoleSpy.info.mock.calls[0][0];
+      expect(logMessage).toContain('"defined":"value"');
+    });
+
+    it('should handle context with Date objects', () => {
+      const date = new Date('2024-01-15T10:30:00.000Z');
+      logger.info('Date in context', { timestamp: date });
+
+      expect(consoleSpy.info).toHaveBeenCalled();
+      const logMessage = consoleSpy.info.mock.calls[0][0];
+      expect(logMessage).toContain('2024-01-15');
+    });
+
+    it('should handle context with numeric string keys', () => {
+      logger.debug('Numeric keys', { '123': 'value', '456': 'another' });
+
+      expect(consoleSpy.debug).toHaveBeenCalled();
+      const logMessage = consoleSpy.debug.mock.calls[0][0];
+      expect(logMessage).toContain('"123":"value"');
+    });
+  });
 });
