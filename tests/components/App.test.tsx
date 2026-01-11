@@ -308,4 +308,103 @@ describe('App', () => {
     expect(rootDiv.className).toContain('bg-gray-950');
     expect(rootDiv.className).toContain('min-h-screen');
   });
+
+  it('should show error when AI prompt is empty', async () => {
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('트레이딩 아이디어를 설명하세요...')).toBeDefined();
+    });
+
+    // Leave input empty and click generate
+    const generateButton = screen.getByText('생성');
+    fireEvent.click(generateButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeDefined();
+      expect(screen.getByText(/AI 프롬프트를 입력해주세요/)).toBeDefined();
+    });
+  });
+
+  it('should show error when AI prompt has only whitespace', async () => {
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('트레이딩 아이디어를 설명하세요...')).toBeDefined();
+    });
+
+    const aiInput = screen.getByPlaceholderText('트레이딩 아이디어를 설명하세요...');
+    fireEvent.change(aiInput, { target: { value: '   ' } });
+
+    const generateButton = screen.getByText('생성');
+    fireEvent.click(generateButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeDefined();
+      expect(screen.getByText(/AI 프롬프트를 입력해주세요/)).toBeDefined();
+    });
+  });
+
+  it('should show friendly error message when AI generation fails', async () => {
+    const { generateAlphaExpression } = await import('../../services/geminiService');
+    (generateAlphaExpression as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('API request failed')
+    );
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('트레이딩 아이디어를 설명하세요...')).toBeDefined();
+    });
+
+    const aiInput = screen.getByPlaceholderText('트레이딩 아이디어를 설명하세요...');
+    fireEvent.change(aiInput, { target: { value: 'momentum strategy' } });
+
+    const generateButton = screen.getByText('생성');
+    fireEvent.click(generateButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeDefined();
+    });
+  });
+
+  it('should show error when expression is empty for backtest', async () => {
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('예: rank(close / delay(close, 1))')).toBeDefined();
+    });
+
+    // Clear the expression
+    const textarea = screen.getByPlaceholderText('예: rank(close / delay(close, 1))');
+    fireEvent.change(textarea, { target: { value: '' } });
+
+    const runButton = screen.getByText('백테스트 실행');
+    fireEvent.click(runButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeDefined();
+      expect(screen.getByText(/수식을 입력해주세요/)).toBeDefined();
+    });
+  });
+
+  it('should show error when expression has only whitespace for backtest', async () => {
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('예: rank(close / delay(close, 1))')).toBeDefined();
+    });
+
+    // Set expression to whitespace only
+    const textarea = screen.getByPlaceholderText('예: rank(close / delay(close, 1))');
+    fireEvent.change(textarea, { target: { value: '   ' } });
+
+    const runButton = screen.getByText('백테스트 실행');
+    fireEvent.click(runButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeDefined();
+      expect(screen.getByText(/수식을 입력해주세요/)).toBeDefined();
+    });
+  });
 });
