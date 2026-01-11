@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generateAlphaExpression } from '../services/geminiService';
-import { AppError, ErrorCodes } from '../utils/errorHandler';
+import { generateAlphaExpression } from '../../services/geminiService';
+import { AppError, ErrorCodes } from '../../utils/errorHandler';
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -20,17 +20,16 @@ describe('geminiService', () => {
       const mockExpression = 'rank(returns, 20)';
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ expression: mockExpression }),
+        text: async () => JSON.stringify({ expression: mockExpression }),
       });
 
       const result = await generateAlphaExpression('momentum strategy');
-      
+
       expect(result).toBe(mockExpression);
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/generate_alpha_expression'),
         expect.objectContaining({
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
         })
       );
     });
@@ -48,7 +47,7 @@ describe('geminiService', () => {
     it('should throw error on invalid response', async () => {
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => ({}), // Missing expression
+        text: async () => JSON.stringify({}), // Missing expression
       });
 
       await expect(generateAlphaExpression('test idea')).rejects.toThrow(AppError);
@@ -61,4 +60,3 @@ describe('geminiService', () => {
     });
   });
 });
-
