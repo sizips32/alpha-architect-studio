@@ -94,6 +94,42 @@ const server = http.createServer(async (req, res) => {
       const annBase = 8 + Math.random() * 12;
       const annAdj = annBase + (config?.performanceGoal?.includes('return') ? 2 : 0);
 
+      // Generate portfolio PnL data
+      const pnlData = Array.from({ length: 252 }, (_, i) => ({
+        day: i + 1,
+        value: 1000 + i * 2 + Math.sin(i * 0.1) * 50 + Math.random() * 20,
+      }));
+
+      // Generate benchmark data (simulating market index like KOSPI or S&P500)
+      // Benchmark typically has lower volatility and steady growth
+      const benchmarkAnnualReturn = 8 + Math.random() * 4; // 8-12% annual return
+      const dailyBenchmarkReturn = benchmarkAnnualReturn / 252 / 100;
+      const benchmarkData = Array.from({ length: 252 }, (_, i) => {
+        const trend = 1000 * Math.pow(1 + dailyBenchmarkReturn, i);
+        const noise = Math.sin(i * 0.08) * 30 + Math.random() * 15;
+        return {
+          day: i + 1,
+          value: Number((trend + noise).toFixed(2)),
+        };
+      });
+
+      // Calculate benchmark name based on universe
+      const benchmarkName =
+        config?.universe?.includes('KR') || config?.region === 'KR'
+          ? 'KOSPI'
+          : config?.universe?.includes('US') || config?.region === 'US'
+            ? 'S&P 500'
+            : 'Market Index';
+
+      // Calculate alpha (excess return over benchmark)
+      const portfolioReturn =
+        ((pnlData[pnlData.length - 1].value - pnlData[0].value) / pnlData[0].value) * 100;
+      const benchmarkReturn =
+        ((benchmarkData[benchmarkData.length - 1].value - benchmarkData[0].value) /
+          benchmarkData[0].value) *
+        100;
+      const alpha = portfolioReturn - benchmarkReturn;
+
       const mockResults = {
         input: {
           expression: usedExpr,
@@ -106,11 +142,14 @@ const server = http.createServer(async (req, res) => {
           turnover: Number(turnoverAdj.toFixed(3)),
           margin: Number((10 + Math.random() * 20).toFixed(3)),
           correlation: Number((0.1 + Math.random() * 0.3).toFixed(3)),
+          alpha: Number(alpha.toFixed(3)),
         },
-        pnlData: Array.from({ length: 252 }, (_, i) => ({
-          day: i + 1,
-          value: 1000 + i * 2 + Math.sin(i * 0.1) * 50 + Math.random() * 20,
-        })),
+        pnlData,
+        benchmark: {
+          name: benchmarkName,
+          data: benchmarkData,
+          return: Number(benchmarkReturn.toFixed(3)),
+        },
       };
 
       return sendJson(res, 200, mockResults);

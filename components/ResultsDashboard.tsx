@@ -222,7 +222,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ results, isL
     return <WalkthroughGuide />;
   }
 
-  const { kpis, pnlData } = results;
+  const { kpis, pnlData, benchmark } = results;
 
   // Memoize KPI values to prevent unnecessary recalculations
   const kpiValues = useMemo(
@@ -260,8 +260,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({ results, isL
       </div>
       <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-4 md:p-6">
         <h3 className="text-lg font-bold text-gray-100 mb-4">포트폴리오 손익 (PnL)</h3>
-        <div className="h-80 w-full">
-          <PerformanceChart data={pnlData} />
+        <div className="w-full">
+          <PerformanceChart data={pnlData} benchmark={benchmark} />
         </div>
       </div>
       <AnalysisAndMindset />

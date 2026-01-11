@@ -27,11 +27,19 @@ export interface Kpis {
   turnover: number;
   margin: number;
   correlation: number;
+  alpha?: number;
+}
+
+export interface BenchmarkData {
+  name: string;
+  data: PnlDataPoint[];
+  return: number;
 }
 
 export interface BacktestResults {
   kpis: Kpis;
   pnlData: PnlDataPoint[];
+  benchmark?: BenchmarkData;
 }
 
 export interface HistoricalData {
