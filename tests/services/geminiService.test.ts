@@ -205,5 +205,197 @@ describe('geminiService', () => {
 
       await expect(generateAlphaExpression('test idea')).rejects.toThrow(AppError);
     });
+
+    it('should use fallback message when error response has no error field', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        json: async () => ({}), // No error field
+      });
+
+      try {
+        await generateAlphaExpression('test idea');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+        expect((error as AppError).message).toContain('404');
+      }
+    });
+
+    it('should use fallback message when error response has null error field', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        json: async () => ({ error: null }),
+      });
+
+      try {
+        await generateAlphaExpression('test idea');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+        expect((error as AppError).message).toContain('502');
+      }
+    });
+
+    it('should use fallback message when error response has empty error field', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({ error: '' }),
+      });
+
+      try {
+        await generateAlphaExpression('test idea');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+        expect((error as AppError).message).toContain('400');
+      }
+    });
+
+    it('should handle non-Error thrown in catch block', async () => {
+      (global.fetch as any).mockRejectedValueOnce('string error');
+
+      try {
+        await generateAlphaExpression('test idea');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+      }
+    });
+
+    it('should handle null thrown in catch block', async () => {
+      (global.fetch as any).mockRejectedValueOnce(null);
+
+      try {
+        await generateAlphaExpression('test idea');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+      }
+    });
+
+    it('should handle undefined thrown in catch block', async () => {
+      (global.fetch as any).mockRejectedValueOnce(undefined);
+
+      try {
+        await generateAlphaExpression('test idea');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+      }
+    });
+
+    it('should handle object thrown in catch block', async () => {
+      (global.fetch as any).mockRejectedValueOnce({ custom: 'error object' });
+
+      try {
+        await generateAlphaExpression('test idea');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+      }
+    });
+
+    it('should handle number thrown in catch block', async () => {
+      (global.fetch as any).mockRejectedValueOnce(500);
+
+      try {
+        await generateAlphaExpression('test idea');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+      }
+    });
+
+    it('should verify error code on API failure', async () => {
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'Internal error' }),
+      });
+
+      try {
+        await generateAlphaExpression('test idea');
+        expect.fail('Should have thrown an error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(AppError);
+        expect((error as AppError).code).toBe(ErrorCodes.API_REQUEST_FAILED);
+        expect((error as AppError).statusCode).toBe(500);
+      }
+    });
+
+    it('should handle response with additional fields', async () => {
+      const mockExpression = 'rank(volume, 10)';
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            expression: mockExpression,
+            extraField: 'ignored',
+            metadata: { timestamp: '2024-01-01' },
+          }),
+      });
+
+      const result = await generateAlphaExpression('volume strategy');
+
+      expect(result).toBe(mockExpression);
+    });
+
+    it('should trim whitespace from valid expression', async () => {
+      const mockExpression = '  rank(close, 20)  ';
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ expression: mockExpression }),
+      });
+
+      const result = await generateAlphaExpression('test');
+
+      // The service returns the expression as-is, validation only checks if trimmed is non-empty
+      expect(result).toBe(mockExpression);
+    });
+
+    it('should handle very long valid expression', async () => {
+      const longExpression = 'rank(' + 'close + '.repeat(100) + 'volume, 20)';
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ expression: longExpression }),
+      });
+
+      const result = await generateAlphaExpression('complex strategy');
+
+      expect(result).toBe(longExpression);
+    });
+
+    it('should handle unicode in expression', async () => {
+      const unicodeExpression = 'rank(종가, 20)';
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ expression: unicodeExpression }),
+      });
+
+      const result = await generateAlphaExpression('한글 전략');
+
+      expect(result).toBe(unicodeExpression);
+    });
+
+    it('should handle special characters in idea', async () => {
+      const mockExpression = 'rank(close, 20)';
+      (global.fetch as any).mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ expression: mockExpression }),
+      });
+
+      const specialIdea = 'strategy with "quotes" & <special> chars';
+      const result = await generateAlphaExpression(specialIdea);
+
+      expect(result).toBe(mockExpression);
+      const fetchCall = (global.fetch as any).mock.calls[0];
+      expect(fetchCall[1].body).toBe(JSON.stringify({ idea: specialIdea }));
+    });
   });
 });
