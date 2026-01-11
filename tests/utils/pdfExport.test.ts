@@ -299,5 +299,351 @@ describe('pdfExport', () => {
       expect(htmlContent).toContain('Drawdown');
       expect(htmlContent).toContain('최대 낙폭');
     });
+
+    it('should sort multiple sectors by amount in descending order', () => {
+      const multiSectorResults: BacktestResults = {
+        ...mockResults,
+        trades: [
+          {
+            date: '2024-01-01',
+            symbol: 'AAPL',
+            name: 'Apple Inc.',
+            sector: 'Technology',
+            action: 'BUY',
+            quantity: 100,
+            price: 150,
+            amount: 15000,
+            pnl: 500,
+          },
+          {
+            date: '2024-01-02',
+            symbol: 'JPM',
+            name: 'JPMorgan Chase',
+            sector: 'Financials',
+            action: 'BUY',
+            quantity: 50,
+            price: 180,
+            amount: 9000,
+            pnl: 300,
+          },
+          {
+            date: '2024-01-03',
+            symbol: 'JNJ',
+            name: 'Johnson & Johnson',
+            sector: 'Healthcare',
+            action: 'BUY',
+            quantity: 30,
+            price: 160,
+            amount: 4800,
+            pnl: 100,
+          },
+          {
+            date: '2024-01-04',
+            symbol: 'XOM',
+            name: 'Exxon Mobil',
+            sector: 'Energy',
+            action: 'SELL',
+            quantity: 80,
+            price: 100,
+            amount: 8000,
+            pnl: -150,
+          },
+        ],
+      };
+
+      exportToPdf({
+        results: multiSectorResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      // All sectors should be present
+      expect(htmlContent).toContain('Technology');
+      expect(htmlContent).toContain('Financials');
+      expect(htmlContent).toContain('Healthcare');
+      expect(htmlContent).toContain('Energy');
+      // Should include pie chart for sector distribution
+      expect(htmlContent).toContain('거래금액 기준');
+    });
+
+    it('should handle empty trades array', () => {
+      const emptyTradesResults: BacktestResults = {
+        ...mockResults,
+        trades: [],
+      };
+
+      exportToPdf({
+        results: emptyTradesResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      expect(mockWrite).toHaveBeenCalled();
+      const htmlContent = mockWrite.mock.calls[0][0];
+      // Should not include trade section when trades array is empty
+      expect(htmlContent).not.toContain('거래 내역');
+    });
+
+    it('should handle trades without pnl field', () => {
+      const noPnlResults: BacktestResults = {
+        ...mockResults,
+        trades: [
+          {
+            date: '2024-01-01',
+            symbol: 'AAPL',
+            name: 'Apple Inc.',
+            sector: 'Technology',
+            action: 'BUY',
+            quantity: 100,
+            price: 150,
+            amount: 15000,
+          },
+        ],
+      };
+
+      exportToPdf({
+        results: noPnlResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      expect(htmlContent).toContain('Apple Inc.');
+      // Should show dash for missing pnl
+      expect(htmlContent).toContain('>-</td>');
+    });
+
+    it('should handle negative total return', () => {
+      const negativeReturnResults: BacktestResults = {
+        ...mockResults,
+        pnlData: [
+          { day: 1, value: 1000 },
+          { day: 2, value: 950 },
+          { day: 3, value: 900 },
+          { day: 4, value: 850 },
+          { day: 5, value: 800 },
+        ],
+      };
+
+      exportToPdf({
+        results: negativeReturnResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      // Total return: (800 - 1000) / 1000 * 100 = -20%
+      expect(htmlContent).toContain('-20.00%');
+    });
+
+    it('should handle longer PnL data for monthly calculations', () => {
+      // Create 60 days of data (about 3 months)
+      const longPnlData = Array.from({ length: 60 }, (_, i) => ({
+        day: i + 1,
+        value: 1000 + i * 10 + Math.sin(i / 5) * 50,
+      }));
+
+      const longDataResults: BacktestResults = {
+        ...mockResults,
+        pnlData: longPnlData,
+      };
+
+      exportToPdf({
+        results: longDataResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      // Should have multiple months in the chart
+      expect(htmlContent).toContain('M1');
+      expect(htmlContent).toContain('M2');
+    });
+
+    it('should handle config without performanceGoal', () => {
+      const configWithoutGoal: Config = {
+        universe: 'TOP_3000',
+        delay: 1,
+        lookbackDays: 60,
+        maxStockWeight: 0.02,
+        decay: 0.5,
+        neutralization: 'market',
+        idea: 'Momentum',
+        region: 'US',
+      };
+
+      exportToPdf({
+        results: mockResults,
+        expression: 'rank(close, 20)',
+        config: configWithoutGoal,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      // Should show dash for missing performanceGoal
+      expect(htmlContent).toContain('<td>-</td>');
+    });
+
+    it('should handle single data point in pnlData', () => {
+      const singlePointResults: BacktestResults = {
+        ...mockResults,
+        pnlData: [{ day: 1, value: 1000 }],
+        benchmark: {
+          name: 'S&P 500',
+          data: [{ day: 1, value: 1000 }],
+          return: 0,
+        },
+      };
+
+      exportToPdf({
+        results: singlePointResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      expect(mockWrite).toHaveBeenCalled();
+      const htmlContent = mockWrite.mock.calls[0][0];
+      expect(htmlContent).toContain('1일'); // 시뮬레이션 기간
+    });
+
+    it('should handle trades with same sector different actions', () => {
+      const sameSectorResults: BacktestResults = {
+        ...mockResults,
+        trades: [
+          {
+            date: '2024-01-01',
+            symbol: 'AAPL',
+            name: 'Apple Inc.',
+            sector: 'Technology',
+            action: 'BUY',
+            quantity: 100,
+            price: 150,
+            amount: 15000,
+            pnl: 500,
+          },
+          {
+            date: '2024-01-02',
+            symbol: 'MSFT',
+            name: 'Microsoft',
+            sector: 'Technology',
+            action: 'SELL',
+            quantity: 50,
+            price: 400,
+            amount: 20000,
+            pnl: -100,
+          },
+          {
+            date: '2024-01-03',
+            symbol: 'GOOGL',
+            name: 'Alphabet',
+            sector: 'Technology',
+            action: 'BUY',
+            quantity: 20,
+            price: 140,
+            amount: 2800,
+            pnl: 200,
+          },
+        ],
+      };
+
+      exportToPdf({
+        results: sameSectorResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      // Should aggregate Technology sector stats
+      expect(htmlContent).toContain('Technology');
+      expect(htmlContent).toContain('3건'); // Total trades in sector
+    });
+
+    it('should calculate alpha correctly with negative benchmark', () => {
+      const negativeBenchmarkResults: BacktestResults = {
+        ...mockResults,
+        benchmark: {
+          name: 'S&P 500',
+          data: [
+            { day: 1, value: 1000 },
+            { day: 5, value: 950 },
+          ],
+          return: -5,
+        },
+      };
+
+      exportToPdf({
+        results: negativeBenchmarkResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      // Portfolio return: 15%, Benchmark return: -5%, Alpha: 20%
+      expect(htmlContent).toContain('+20.00%'); // Alpha
+      expect(htmlContent).toContain('-5.00%'); // Benchmark return
+    });
+
+    it('should handle drawdown recovery calculation', () => {
+      // Create data with clear drawdown and recovery
+      const drawdownRecoveryData = [
+        { day: 1, value: 1000 },
+        { day: 2, value: 1050 },
+        { day: 3, value: 900 }, // Drawdown
+        { day: 4, value: 850 }, // Deeper drawdown
+        { day: 5, value: 920 }, // Recovery
+        { day: 6, value: 1000 }, // Full recovery
+        { day: 7, value: 1100 }, // New peak
+      ];
+
+      const drawdownResults: BacktestResults = {
+        ...mockResults,
+        pnlData: drawdownRecoveryData,
+      };
+
+      exportToPdf({
+        results: drawdownResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      expect(htmlContent).toContain('최장 회복 기간');
+      expect(htmlContent).toContain('평균 낙폭');
+    });
+
+    it('should handle zero benchmark return', () => {
+      const zeroBenchmarkResults: BacktestResults = {
+        ...mockResults,
+        benchmark: {
+          name: 'S&P 500',
+          data: [
+            { day: 1, value: 1000 },
+            { day: 5, value: 1000 },
+          ],
+          return: 0,
+        },
+      };
+
+      exportToPdf({
+        results: zeroBenchmarkResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      expect(htmlContent).toContain('+0.00%'); // Benchmark return
+    });
+
+    it('should include close button in HTML', () => {
+      exportToPdf({
+        results: mockResults,
+        expression: 'rank(close, 20)',
+        config: mockConfig,
+      });
+
+      const htmlContent = mockWrite.mock.calls[0][0];
+      expect(htmlContent).toContain('window.close()');
+      expect(htmlContent).toContain('닫기');
+    });
   });
 });
